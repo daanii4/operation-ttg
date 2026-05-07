@@ -1,0 +1,255 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  // List `public` first so Migrate uses `public._prisma_migrations` (shared ledger with Scholars OS).
+  // TTG models live only in `ttg` — `scholars` is not listed, so the client cannot reference it.
+  schemas   = ["public", "ttg"]
+}
+
+// ─── ENUMS ────────────────────────────────────────────────────────────────────
+
+enum TargetDivision {
+  DI
+  DII
+  DI_or_DII_undecided
+  DIII
+  NAIA
+  Unknown
+
+  @@schema("ttg")
+}
+
+enum RiskBand {
+  GREEN
+  YELLOW
+  RED
+  LOCKED
+  NOT_APPLICABLE
+
+  @@schema("ttg")
+}
+
+enum EvidenceTier {
+  Deterministic
+  Provisional
+  Strong
+  Moderate
+  Weak
+  Insufficient
+  Not_Applicable
+
+  @@schema("ttg")
+}
+
+enum UserRole {
+  ADVISOR
+  ADMIN
+
+  @@schema("ttg")
+}
+
+enum NcaaChecklistItemKey {
+  account_created
+  ncaa_id_obtained
+  official_transcript_sent
+  amateurism_questionnaire_completed
+  fee_waiver_applied_if_applicable
+
+  @@schema("ttg")
+}
+
+// ─── USERS (NextAuth credential provider) ──────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(ADVISOR)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  advisorStudents StudentAthlete[] @relation("AdvisorStudents")
+
+  @@schema("ttg")
+}
+
+// ─── HIGH SCHOOL CALENDAR ───────────────────────────────────────────────────
+
+model SchoolCalendar {
+  id                     String   @id @default(cuid())
+  highSchoolId           String   @unique
+  highSchoolName         String
+  /// First day of fall semester for grade 12 — the NCAA 10/7 lock-in anchor (AD-1)
+  seniorFallTermStart    DateTime
+  /// Per-school max cores per standard term (varies by block vs 6-period schedule)
+  maxCoresPerTerm        Int      @default(4)
+  /// Per-school max EMS cores per term
+  maxEmsPerTerm          Int      @default(2)
+  /// Source URL for calendar authority
+  calendarSourceUrl      String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  students StudentAthlete[]
+  terms    SchoolTerm[]
+
+  @@schema("ttg")
+}
+
+model SchoolTerm {
+  id             String         @id @default(cuid())
+  schoolCalendar SchoolCalendar @relation(fields: [schoolCalendarId], references: [id], onDelete: Cascade)
+  schoolCalendarId String
+  /// e.g. "Fall 2025", "Spring 2026", "Summer 2026"
+  termName       String
+  termType       String         // 'fall' | 'spring' | 'summer'
+  startDate      DateTime
+  endDate        DateTime
+  createdAt      DateTime       @default(now())
+
+  @@schema("ttg")
+}
+
+// ─── STUDENT ATHLETE ─────────────────────────────────────────────────────────
+
+model StudentAthlete {
+  id                  String           @id @default(cuid())
+  firstName           String
+  lastName            String
+  grade               Int              // 9 | 10 | 11 | 12
+  targetDivision      TargetDivision
+  /// Grade 9 enrollment date — F5 fallback when school calendar absent (AD-1)
+  enrollmentDateGrade9 DateTime
+  highSchoolId        String
+  highSchoolName      String
+
+  schoolCalendar      SchoolCalendar?  @relation(fields: [highSchoolId], references: [highSchoolId])
+  advisor             User?            @relation("AdvisorStudents", fields: [advisorId], references: [id])
+  advisorId           String?
+
+  courses             CourseRecord[]
+  f5Results           F5Result[]
+
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([advisorId])
+  @@index([highSchoolId])
+
+  @@schema("ttg")
+}
+
+// ─── COURSE RECORD ───────────────────────────────────────────────────────────
+
+model CourseRecord {
+  id                    String         @id @default(cuid())
+  student               StudentAthlete @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId             String
+  courseName            String
+  /// Normalized grade: 'A' | 'B' | 'C' | 'D' | 'F' | 'IP' (in-progress)
+  gradeLetterNormalized String
+  termEndDate           DateTime
+  /// NCAA DI core category: 'eng' | 'math' | 'sci' | 'addl_ems' | 'soc_sci' | 'addl_any' | null
+  ncaaD1Category        String?
+  /// Whether NCAA has classified this as an approved core course for this HS
+  ncaaApproved          Boolean        @default(false)
+  /// A-G category: 'a'|'b'|'c'|'d'|'e'|'f'|'g' | null
+  agCategory            String?
+  /// Classification timestamp — used for staleness check (>365d → Provisional)
+  classificationUpdatedAt DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([studentId])
+
+  @@schema("ttg")
+}
+
+// ─── F5 RESULT (persisted, server-computed) ───────────────────────────────
+
+/// Persisted output of calc_ncaa_10_7_status. Recomputed on demand and stored.
+/// All computed fields live here — frontend receives pre-computed values only.
+model F5Result {
+  id                   String         @id @default(cuid())
+  student              StudentAthlete @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId            String
+  computedAt           DateTime
+
+  applicable           Boolean
+  notApplicableReason  String?
+
+  /// Lock-in date (seventh_semester_start)
+  lockInDate           DateTime?
+  lockInDateBasis      String?        // 'school_calendar' | 'fallback_estimate_grade9_plus_3yr'
+  provisionalFlag      Boolean        @default(false)
+  daysToLock           Int?
+  pastLock             Boolean        @default(false)
+
+  completedTotal       Int            @default(0)
+  completedEngMathSci  Int            @default(0)
+  missingTotal         Int            @default(0)
+  missingEngMathSci    Int            @default(0)
+
+  riskBand             RiskBand
+  evidenceTier         EvidenceTier
+
+  /// JSONB: AgFailureDualFlag[]
+  agFailureDualFlags   Json           @default("[]")
+  /// JSONB: CourseRecord ids that are unclassified
+  unclassifiedCourseIds Json          @default("[]")
+  /// JSONB: RecommendedCourse[]
+  recommendedCoursesNextTerm Json     @default("[]")
+
+  createdAt            DateTime       @default(now())
+
+  @@index([studentId])
+  @@index([computedAt])
+
+  @@schema("ttg")
+}
+
+/// Current NCAA Eligibility Center checklist state per student.
+model NcaEligibilityChecklistState {
+  id                              String   @id @default(cuid())
+  studentId                       String
+  accountCreated                  Boolean  @default(false)
+  ncaaIdObtained                  Boolean  @default(false)
+  officialTranscriptSent          Boolean  @default(false)
+  amateurismQuestionnaireComplete Boolean  @default(false)
+  feeWaiverAppliedIfApplicable    Boolean  @default(false)
+  updatedByActorId                String?
+  updatedAt                       DateTime @updatedAt
+  createdAt                       DateTime @default(now())
+
+  events NcaEligibilityChecklistEvent[]
+
+  @@unique([studentId])
+  @@index([studentId])
+  @@schema("ttg")
+}
+
+/// Immutable append-only checklist event log for advisor toggles.
+model NcaEligibilityChecklistEvent {
+  id              String               @id @default(cuid())
+  state           NcaEligibilityChecklistState @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  stateId         String
+  studentId       String
+  itemKey         NcaaChecklistItemKey
+  checked         Boolean
+  actorId         String
+  actorName       String?
+  sourceContext   String?
+  previousHash    String?
+  eventHash       String
+  createdAt       DateTime             @default(now())
+
+  @@index([studentId, createdAt])
+  @@index([stateId, createdAt])
+  @@schema("ttg")
+}

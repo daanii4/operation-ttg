@@ -1,0 +1,276 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Operation TTG Design System
+ * Inherits from Scholars OS — light olive surface, white cards, gold accents.
+ * Adds TTG-specific risk band tokens for NCAA D1 10/7 lock-in countdown.
+ */
+
+:root {
+  /* Geist Sans is loaded via the `geist` package which defines --font-geist-sans.
+   * Alias it to --font-sans so all design tokens reference one variable. */
+  --font-sans: var(--font-geist-sans);
+  /* DM Serif from Next.js font class (--font-dm-serif); aligns with Scholars OS. */
+  --font-serif: var(--font-dm-serif);
+
+  /* === Surfaces (Scholars OS) === */
+  --surface-page:    #f2f4ee;
+  --surface-card:    #ffffff;
+  --surface-inner:   #eef0e8;
+  --surface-inverse: #2d3820;
+
+  /* === Olive palette === */
+  --olive-50:  #f3f7e8;
+  --olive-100: #e4eccc;
+  --olive-200: #c8d6aa;
+  --olive-300: #aabb8a;
+  --olive-400: #8a9e69;
+  --olive-500: #6e8050;
+  --olive-600: #5c6b46;
+  --olive-700: #3d4c2c;
+  --olive-800: #2d3820;
+  --olive-900: #1e2517;
+
+  /* === Gold palette === */
+  --gold-50:  #fdf8ec;
+  --gold-100: #faf0d0;
+  --gold-200: #f0d898;
+  --gold-400: #e0b44e;
+  --gold-500: #d6a033;
+  --gold-600: #b8861a;
+
+  /* === Text === */
+  --text-primary:   #1e2517;
+  --text-secondary: #3d4c2c;
+  --text-tertiary:  #6e8050;
+  --text-quaternary:#8a9e69;
+
+  /* === Borders === */
+  --border-default: rgba(92, 107, 70, 0.12);
+  --border-hover:   rgba(92, 107, 70, 0.25);
+  --border-strong:  rgba(92, 107, 70, 0.40);
+
+  /* === Radii === */
+  --radius-sm:      4px;
+  --radius-md:      6px;
+  --radius-default: 8px;
+  --radius-lg:      12px;
+  --radius-xl:      16px;
+  --radius-full:    9999px;
+  --radius-os-motif: 0 0 9999px 0;
+  --radius-os-motif-left: 0 0 0 9999px;
+
+  /* === Semantic status (Scholars OS) === */
+  --color-success:    #16a34a;
+  --color-warning:    #d97706;
+  --color-regression: #b45309;
+  --color-escalation: #991b1b;
+  --color-error:      #dc2626;
+  --color-info:       #2563eb;
+
+  /* === Motion (Scholars OS) === */
+  --duration-instant: 80ms;
+  --duration-fast: 150ms;
+  --duration-normal: 220ms;
+  --duration-slow: 350ms;
+  --duration-reveal: 500ms;
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-both: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* === Brand (Scholars OS) === */
+  --brand-gold-glow-text: #d6a033;
+  --surface-brand-warm: rgba(214, 160, 51, 0.08);
+
+  /* === Shadows === */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.10), 0 4px 6px -4px rgb(0 0 0 / 0.06);
+  --shadow-primary: 0 4px 14px 0 rgb(92 107 70 / 0.18);
+
+  /* === TTG additions: trajectory + action risk tokens === */
+  --band-track:   #2563EB;
+  --band-support: #D97706;
+  --band-urgent:  #9333EA;
+  --band-pivot:   #475569;
+
+  --band-track-fill:    rgba(37, 99, 235, 0.12);
+  --band-track-border:  rgba(37, 99, 235, 0.30);
+  --band-support-fill:  rgba(217, 119, 6, 0.12);
+  --band-support-border:rgba(217, 119, 6, 0.30);
+  --band-urgent-fill:   rgba(147, 51, 234, 0.12);
+  --band-urgent-border: rgba(147, 51, 234, 0.30);
+  --band-pivot-fill:    rgba(71, 85, 105, 0.14);
+  --band-pivot-border:  rgba(71, 85, 105, 0.30);
+
+  /* Backward-compatible aliases for existing utility classes. */
+  --band-green:         var(--band-track);
+  --band-yellow:        var(--band-support);
+  --band-red:           var(--band-urgent);
+  --band-locked:        var(--band-pivot);
+  --band-green-fill:    var(--band-track-fill);
+  --band-green-border:  var(--band-track-border);
+  --band-yellow-fill:   var(--band-support-fill);
+  --band-yellow-border: var(--band-support-border);
+  --band-red-fill:      var(--band-urgent-fill);
+  --band-red-border:    var(--band-urgent-border);
+  --band-locked-fill:   var(--band-pivot-fill);
+  --band-locked-border: var(--band-pivot-border);
+
+  /* TTG AIMS / escalation accent — paired components reference these */
+  --color-escalation: #991b1b;
+  --color-escalation-fill: rgba(153, 27, 27, 0.08);
+}
+
+/* OS quarter-circle motif — sidebar logo tile (Scholars OS) */
+.os-motif {
+  border-radius: var(--radius-os-motif);
+}
+
+.os-motif-left {
+  border-radius: var(--radius-os-motif-left);
+}
+
+/* Typography utility — AppHeader wordmark + product surfaces */
+.os-subhead {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Header logo tile — matches Scholars OS AppHeader ZONE 1 */
+.scholars-header__logo-frame {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #d6a033;
+  border-radius: var(--radius-os-motif);
+}
+
+a.scholars-header__logo-frame {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+a.scholars-header__logo-frame:hover {
+  opacity: 0.92;
+}
+
+a.scholars-header__logo-frame:focus-visible {
+  outline: 2px solid rgb(255 255 255 / 0.85);
+  outline-offset: 3px;
+}
+
+a.scholars-header__logo-frame:active {
+  transform: scale(0.97);
+}
+
+.scholars-header__logo {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
+@media (max-width: 1023px) {
+  .scholars-header__logo-frame {
+    width: 38px;
+    height: 38px;
+  }
+
+  .scholars-header__logo {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+@media (max-width: 639px) {
+  .scholars-header__logo-frame {
+    width: 34px;
+    height: 34px;
+  }
+
+  .scholars-header__logo {
+    width: 27px;
+    height: 27px;
+  }
+}
+
+@media (max-width: 379px) {
+  .scholars-header__logo-frame {
+    width: 30px;
+    height: 30px;
+  }
+
+  .scholars-header__logo {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f3f7e8 25%,
+    #e4eccc 37%,
+    #f3f7e8 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 16px; }
+
+body {
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  padding: 0;
+}
+
+/* Headings inherit DM Serif Display via Tailwind utilities */
+h1, h2, h3, h4 {
+  font-family: var(--font-serif), serif;
+  color: var(--text-primary);
+  font-weight: 400;
+  margin: 0;
+}
+
+p { margin: 0; }
+
+/* Focus ring helper — accessible olive ring on light surfaces */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--olive-600);
+  outline-offset: 2px;
+}
+.focus-ring-gold:focus-visible {
+  outline: 2px solid var(--gold-500);
+  outline-offset: 2px;
+}
