@@ -24,7 +24,12 @@ export const metadata: Metadata = {
   title: "Operation TTG · Eligibility Intelligence",
   description: "NCAA D1 10/7 Eligibility Intelligence — QuasarNova LLC",
   icons: {
-    icon: [{ url: "/icon.png", type: "image/png", sizes: "48x48" }],
+    icon: [
+      { url: "/icon.png", type: "image/png", sizes: "48x48" },
+      { url: "/apple-icon.png", type: "image/png", sizes: "180x180" },
+    ],
+    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
+    shortcut: "/icon.png",
   },
 };
 
