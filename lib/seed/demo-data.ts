@@ -1,5 +1,8 @@
 /**
- * TTG Demo Seed Data
+ * DEMO SEED — in-memory placeholder data (single fictional school).
+ * Superseded for production by the District / HighSchool / CourseClassification
+ * tables per D2. Retained for: (a) the 35-test F5 suite, (b) the v0.1 district
+ * demo until Manteca + Tracy DB data is verified. Do not add new schools here.
  *
  * 12 student-athletes across Manteca Unified School District high schools (demo cohort).
  * Students TC1 (Marcus), TC2 (Aaliyah), TC3 (Jordan) match D1 Spec §14 exactly.
