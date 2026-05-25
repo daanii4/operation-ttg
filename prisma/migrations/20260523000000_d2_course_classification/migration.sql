@@ -14,6 +14,8 @@ CREATE TABLE "ttg"."District" (
 
 ALTER TABLE "ttg"."SchoolCalendar" RENAME TO "HighSchool";
 
+-- Drop StudentAthlete FK before the unique index it depends on
+ALTER TABLE "ttg"."StudentAthlete" DROP CONSTRAINT IF EXISTS "StudentAthlete_highSchoolId_fkey";
 DROP INDEX IF EXISTS "ttg"."SchoolCalendar_highSchoolId_key";
 
 ALTER TABLE "ttg"."HighSchool" RENAME COLUMN "highSchoolName" TO "schoolName";
@@ -44,8 +46,6 @@ ALTER TABLE "ttg"."SchoolTerm" RENAME COLUMN "schoolCalendarId" TO "highSchoolId
 ALTER TABLE "ttg"."SchoolTerm" DROP CONSTRAINT IF EXISTS "SchoolTerm_schoolCalendarId_fkey";
 ALTER TABLE "ttg"."SchoolTerm" ADD CONSTRAINT "SchoolTerm_highSchoolId_fkey"
     FOREIGN KEY ("highSchoolId") REFERENCES "ttg"."HighSchool"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "ttg"."StudentAthlete" DROP CONSTRAINT IF EXISTS "StudentAthlete_highSchoolId_fkey";
 
 UPDATE "ttg"."StudentAthlete" sa
 SET "highSchoolId" = hs."id"
