@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { LayoutDashboard, Map, PanelLeftClose, type LucideIcon } from "lucide-react";
+import { BarChart3, Map, PanelLeftClose, type LucideIcon } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { useLocalStorageBoolean } from "@/lib/hooks/use-local-storage-boolean";
 
