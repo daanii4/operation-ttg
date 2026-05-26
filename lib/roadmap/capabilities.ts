@@ -167,19 +167,21 @@ export const ROADMAP_CAPABILITIES: RoadmapCapability[] = [
     agentQuestions: [],
   },
   {
-    id: "auth-nextauth",
+    id: "auth-supabase",
     phaseId: "v0.2",
-    label: "Advisor auth (NextAuth)",
-    detail: "User model exists; no auth routes or middleware yet.",
+    label: "Advisor auth (Supabase)",
+    detail: "Email/password sign-in via Supabase Auth; middleware protects dashboard, students, and APIs.",
     priority: 60,
     probe: {
-      implementation: ["app/api/auth/[...nextauth]/route.ts"],
-      wiring: ["middleware.ts"],
+      implementation: [
+        "middleware.ts",
+        "lib/supabase/server.ts",
+        "app/login/page.tsx",
+        "app/auth/callback/route.ts",
+      ],
+      wiring: ["components/auth/SignOutButton.tsx"],
     },
-    agentQuestions: [
-      "Which identity provider(s) should ship first — credentials only, Google Workspace, or both?",
-      "Should ADVISOR vs ADMIN be enforced at middleware or per-route?",
-    ],
+    agentQuestions: [],
   },
   {
     id: "db-cohort-reads",

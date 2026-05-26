@@ -19,18 +19,19 @@ describe("product roadmap", () => {
     expect(chart?.status).toBe("live");
   });
 
-  it("resolves v0.2 as IN_BUILD when F1–F7 exist but auth does not", () => {
+  it("resolves v0.2 as IN_BUILD with Supabase auth live and DB reads planned", () => {
     const snapshot = getProductRoadmapSnapshot();
     const v02 = snapshot.phases.find((p) => p.id === "v0.2");
     expect(v02?.status).toBe("IN_BUILD");
     expect(v02?.items.find((i) => i.id === "f1-f7-calcs")?.status).toBe("live");
-    expect(v02?.items.find((i) => i.id === "auth-nextauth")?.status).toBe("planned");
+    expect(v02?.items.find((i) => i.id === "auth-supabase")?.status).toBe("live");
+    expect(v02?.items.find((i) => i.id === "db-cohort-reads")?.status).toBe("planned");
   });
 
   it("returns next focus as highest-priority non-live item", () => {
     const next = getNextRoadmapFocus();
     expect(next).not.toBeNull();
-    expect(next!.capabilityId).toBe("auth-nextauth");
+    expect(next!.capabilityId).toBe("db-cohort-reads");
     expect(next!.status).toBe("planned");
   });
 });

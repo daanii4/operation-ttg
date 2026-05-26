@@ -14,7 +14,10 @@ export default async function AdminLayout({
 }) {
   const session = await getTtgSession();
 
-  if (!session || session.role !== "ADMIN") {
+  if (!session) {
+    redirect("/login");
+  }
+  if (session.role !== "ADMIN") {
     redirect("/dashboard/analytics");
   }
 

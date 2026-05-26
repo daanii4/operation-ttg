@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { handleAuthError } from "@/lib/auth/api-errors";
+import { requireTtgSession } from "@/lib/auth/session";
 import { z } from "zod";
 import type { NcaaChecklistItemKey } from "@prisma/client";
 import { prismaTtg } from "@/lib/prisma";

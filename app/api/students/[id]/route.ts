@@ -6,12 +6,20 @@
  */
 
 import { NextResponse } from "next/server";
+import { handleAuthError } from "@/lib/auth/api-errors";
+import { requireTtgSession } from "@/lib/auth/session";
 import { computeAllDemoResults } from "@/lib/seed/demo-data";
 
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
 ): Promise<NextResponse> {
+  try {
+    await requireTtgSession();
+  } catch (err) {
+    return handleAuthError(err);
+  }
+
   const all = computeAllDemoResults();
   const found = all.find((r) => r.studentId === params.id);
 

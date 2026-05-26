@@ -5,7 +5,8 @@ import {
   f5StudentToStudentInput,
 } from "@/lib/eligibility/demo-classified-courses";
 import { computeEligibilityBundle } from "@/lib/eligibility/compute-eligibility";
-import { notFoundResponse } from "@/lib/auth/api-errors";
+import { handleAuthError, notFoundResponse } from "@/lib/auth/api-errors";
+import { requireTtgSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,12 @@ export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
+  try {
+    await requireTtgSession();
+  } catch (err) {
+    return handleAuthError(err);
+  }
+
   const demo = ALL_DEMO_STUDENTS.find((d) => d.student.id === params.id);
   if (!demo) return notFoundResponse();
 
