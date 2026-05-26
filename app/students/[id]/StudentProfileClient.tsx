@@ -13,6 +13,7 @@ import MentalHealthAlert from "@/components/ttg/MentalHealthAlert";
 import FallbackPathwayPanel from "@/components/ttg/FallbackPathwayPanel";
 import NcaaEligibilityCenterStatus from "@/components/ttg/NcaaEligibilityCenterStatus";
 import NcaaApprovedCoursesPanel from "@/components/ttg/NcaaApprovedCoursesPanel";
+import EligibilityPanels from "@/components/ttg/EligibilityPanels";
 import type { HolisticStudentRisk } from "@/lib/calculations/holistic-rollup";
 
 type ProfileData = {
