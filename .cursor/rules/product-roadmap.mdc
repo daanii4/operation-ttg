@@ -1,0 +1,26 @@
+---
+description: Product roadmap — how to answer "what's next" and what info to collect
+globs:
+  - lib/roadmap/**
+  - app/about/roadmap/**
+  - components/ttg/Roadmap*.tsx
+alwaysApply: false
+---
+
+# Operation TTG product roadmap
+
+When the user asks about the **product roadmap**, **what ships next**, or **what to build next**:
+
+1. Read `lib/roadmap/resolve-roadmap.ts` and call **`getNextRoadmapFocus()`** (or `getProductRoadmapSnapshot()` for full phase breakdown).
+2. Do **not** rely on static copy in old docs or `TTGRoadmap.tsx` — the UI at `/about/roadmap` is driven by **`lib/roadmap/capabilities.ts`** plus file probes in `lib/roadmap/probes.ts`.
+3. Report the returned `label`, `status`, `phaseVersion`, and **`agentQuestions`**.
+4. Ask the user the **`agentQuestions`** (and phase `blockers`) before scoping implementation work.
+5. Use **`promptForUser`** as the concise summary of what you need from them.
+
+Capability status rules:
+
+- **live** — implementation files exist and wiring probes pass
+- **partial** — code exists but not fully wired (e.g. DistributionChart not on cohort page)
+- **planned** — probe paths missing
+
+To add or update roadmap items, edit `ROADMAP_CAPABILITIES` in `lib/roadmap/capabilities.ts` and keep `probe` paths accurate.
