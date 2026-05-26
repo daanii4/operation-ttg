@@ -230,6 +230,8 @@ model CourseRecord {
   courseName            String
   gradeLetterNormalized String
   termEndDate           DateTime
+  termLength            String   @default("semester")
+  academicYear          String?
   ncaaD1Category        String?
   ncaaApproved          Boolean        @default(false)
   agCategory            String?
