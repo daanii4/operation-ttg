@@ -1,8 +1,8 @@
-/**
- * Session helpers — scaffolded for NextAuth; uses env headers in dev until auth is wired.
- */
 import { headers } from "next/headers";
 import type { UserRole } from "@prisma/client";
+import { isSupabaseAuthConfigured } from "@/lib/supabase/env";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveTtgRole } from "./roles";
 
 export interface TtgSession {
   userId: string;
@@ -11,17 +11,10 @@ export interface TtgSession {
   name?: string;
 }
 
-/**
- * Resolves the current TTG session.
- * Production: replace with getServerSession from next-auth.
- * Dev/demo: set x-ttg-user-id and x-ttg-user-role request headers, or TTG_DEV_USER_* env vars.
- */
-export async function getTtgSession(): Promise<TtgSession | null> {
+async function getDevHeaderSession(): Promise<TtgSession | null> {
   const h = await headers();
-  const userId =
-    h.get("x-ttg-user-id") ?? process.env.TTG_DEV_USER_ID ?? null;
-  const roleRaw =
-    h.get("x-ttg-user-role") ?? process.env.TTG_DEV_USER_ROLE ?? "ADVISOR";
+  const userId = h.get("x-ttg-user-id") ?? process.env.TTG_DEV_USER_ID ?? null;
+  const roleRaw = h.get("x-ttg-user-role") ?? process.env.TTG_DEV_USER_ROLE ?? "ADVISOR";
 
   if (!userId) {
     if (process.env.TTG_ALLOW_ANONYMOUS_SESSION === "true") {
@@ -39,9 +32,48 @@ export async function getTtgSession(): Promise<TtgSession | null> {
   };
 }
 
+export async function getTtgSession(): Promise<TtgSession | null> {
+  if (!isSupabaseAuthConfigured()) {
+    return getDevHeaderSession();
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error || !user) {
+      if (process.env.NODE_ENV === "development") {
+        return getDevHeaderSession();
+      }
+      return null;
+    }
+
+    const role = await resolveTtgRole(user);
+    const name =
+      (user.user_metadata?.full_name as string | undefined) ??
+      (user.user_metadata?.name as string | undefined) ??
+      user.email?.split("@")[0];
+
+    return {
+      userId: user.id,
+      role,
+      email: user.email ?? undefined,
+      name,
+    };
+  } catch {
+    if (process.env.NODE_ENV === "development") {
+      return getDevHeaderSession();
+    }
+    return null;
+  }
+}
+
 export async function requireTtgSession(): Promise<TtgSession> {
   const session = await getTtgSession();
-  if (!session) {
+  if (!session || session.userId === "anonymous") {
     throw new Error("UNAUTHORIZED");
   }
   return session;

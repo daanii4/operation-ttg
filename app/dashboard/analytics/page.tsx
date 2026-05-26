@@ -15,7 +15,7 @@ import { computeApproachingDeadlines } from "@/lib/calculations/approaching-dead
 import { computeNcaaReadinessSummary } from "@/lib/eligibility/ncaa-readiness";
 
 export const metadata: Metadata = {
-  title: "Cohort Dashboard · Operation TTG",
+  title: "Analytics · Operation TTG",
 };
 
 async function getCohortData(): Promise<CohortApiResponse> {

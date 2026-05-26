@@ -7,6 +7,8 @@
  */
 
 import { NextResponse } from "next/server";
+import { handleAuthError } from "@/lib/auth/api-errors";
+import { requireTtgSession } from "@/lib/auth/session";
 import { computeAllDemoResults, DEMO_TODAY } from "@/lib/seed/demo-data";
 import type { RiskBand } from "@/lib/calculations/f5";
 import { getHolisticProfile } from "@/lib/seed/holistic-data";

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { LayoutDashboard, Map, PanelLeftClose, type LucideIcon } from "lucide-react";
+import { BarChart3, Map, PanelLeftClose, type LucideIcon } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
+import SignOutButton from "@/components/auth/SignOutButton";
 import { useLocalStorageBoolean } from "@/lib/hooks/use-local-storage-boolean";
 
 const NAV_SECTIONS = ["Main"] as const;
@@ -19,8 +20,8 @@ type NavLinkItem = {
 const NAV_LINKS: NavLinkItem[] = [
   {
     href: "/dashboard/analytics",
-    label: "Cohort Dashboard",
-    icon: LayoutDashboard,
+    label: "Analytics",
+    icon: BarChart3,
     section: "Main",
   },
   {
@@ -342,6 +343,7 @@ export function DashboardShell({
         </nav>
 
         <div className="flex shrink-0 flex-col gap-1 border-t border-white/[0.06] px-2 py-3">
+          <SignOutButton compact={!sidebarOpen} />
           <button
             type="button"
             onClick={() => setSidebarOpen((o) => !o)}
