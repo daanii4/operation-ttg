@@ -7,6 +7,7 @@ import EvidenceFootnote from "@/components/ttg/EvidenceFootnote";
 import HolisticKpiGrid from "@/components/ttg/HolisticKpiGrid";
 import ApproachingDeadlinesPanel from "@/components/ttg/ApproachingDeadlinesPanel";
 import NcaaReadinessCard from "@/components/ttg/NcaaReadinessCard";
+import DistributionChart from "@/components/ttg/DistributionChart";
 
 export default function CohortClient({ data }: { data: CohortApiResponse }) {
   return (

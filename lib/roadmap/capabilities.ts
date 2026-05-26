@@ -61,7 +61,7 @@ export const ROADMAP_CAPABILITIES: RoadmapCapability[] = [
     id: "cohort-band-chart",
     phaseId: "v0.1",
     label: "Band distribution chart",
-    detail: "Lock-window histogram by risk band — data is computed server-side but chart is not mounted.",
+    detail: "Lock-window histogram by risk band on Analytics, mounted above the student roster.",
     priority: 25,
     probe: {
       implementation: ["components/ttg/DistributionChart.tsx"],

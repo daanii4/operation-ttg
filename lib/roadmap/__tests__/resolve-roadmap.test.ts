@@ -12,11 +12,11 @@ describe("product roadmap", () => {
     expect(f5?.status).toBe("live");
   });
 
-  it("marks band chart partial when not mounted on cohort page", () => {
+  it("marks band chart live when mounted on cohort analytics page", () => {
     const snapshot = getProductRoadmapSnapshot();
     const v01 = snapshot.phases.find((p) => p.id === "v0.1");
     const chart = v01?.items.find((i) => i.id === "cohort-band-chart");
-    expect(chart?.status).toBe("partial");
+    expect(chart?.status).toBe("live");
   });
 
   it("resolves v0.2 as IN_BUILD when F1–F7 exist but auth does not", () => {
@@ -30,7 +30,7 @@ describe("product roadmap", () => {
   it("returns next focus as highest-priority non-live item", () => {
     const next = getNextRoadmapFocus();
     expect(next).not.toBeNull();
-    expect(next!.capabilityId).toBe("cohort-band-chart");
-    expect(next!.status).toBe("partial");
+    expect(next!.capabilityId).toBe("auth-nextauth");
+    expect(next!.status).toBe("planned");
   });
 });

@@ -19,8 +19,8 @@ type NavLinkItem = {
 const NAV_LINKS: NavLinkItem[] = [
   {
     href: "/dashboard/analytics",
-    label: "Cohort Dashboard",
-    icon: LayoutDashboard,
+    label: "Analytics",
+    icon: BarChart3,
     section: "Main",
   },
   {
