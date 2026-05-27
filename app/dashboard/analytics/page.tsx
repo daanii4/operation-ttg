@@ -1,37 +1,12 @@
-import type { Metadata } from "next";
-import { buildCohortResponse } from "@/lib/cohort/build-cohort-response";
-import DashboardShell from "@/components/layout/DashboardShell";
-import TtgHeaderActions from "@/components/layout/TtgHeaderActions";
-import Breadcrumb from "@/components/layout/Breadcrumb";
-import CohortClient from "./CohortClient";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Analytics · Operation TTG",
-};
-
-export default async function AnalyticsPage() {
-  const data = await buildCohortResponse();
-  const computedDate = new Date(data.computedAt).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  return (
-    <DashboardShell
-      eyebrow="OVERVIEW"
-      pageTitle="Cohort Analytics"
-      pageSubtitle={`${data.totalStudents} student-athletes · Computed ${computedDate} · Evidence tier deterministic`}
-      headerActions={<TtgHeaderActions />}
-    >
-      <Breadcrumb
-        items={[
-          { label: "Operation TTG", href: "/" },
-          { label: "Manteca USD", href: "/dashboard/analytics" },
-          { label: "Cohort Analytics" },
-        ]}
-      />
-      <CohortClient data={data} />
-    </DashboardShell>
-  );
+/**
+ * Sprint 5 — sidebar restructure (Operation TTG · May 2026).
+ *
+ * /dashboard/analytics is preserved as a redirect to /dashboard so that any
+ * deep links from prior sprints (e.g. breadcrumbs, emails, bookmarks) keep
+ * resolving instead of 404ing. The Overview content now lives at /dashboard.
+ */
+export default function AnalyticsRedirectPage() {
+  redirect("/dashboard");
 }

@@ -3,13 +3,13 @@ import { buildCohortResponse } from "@/lib/cohort/build-cohort-response";
 import DashboardShell from "@/components/layout/DashboardShell";
 import TtgHeaderActions from "@/components/layout/TtgHeaderActions";
 import Breadcrumb from "@/components/layout/Breadcrumb";
-import OverviewClient from "./OverviewClient";
+import RosterClient from "./RosterClient";
 
 export const metadata: Metadata = {
-  title: "Overview · Operation TTG",
+  title: "Roster · Operation TTG",
 };
 
-export default async function DashboardOverviewPage() {
+export default async function RosterPage() {
   const data = await buildCohortResponse();
   const computedDate = new Date(data.computedAt).toLocaleDateString("en-US", {
     year: "numeric",
@@ -19,19 +19,19 @@ export default async function DashboardOverviewPage() {
 
   return (
     <DashboardShell
-      eyebrow="OVERVIEW"
-      pageTitle="Cohort Overview"
-      pageSubtitle={`${data.totalStudents} student-athletes · Computed ${computedDate} · Evidence tier deterministic`}
+      eyebrow="ROSTER"
+      pageTitle="Student-Athlete Roster"
+      pageSubtitle={`${data.totalStudents} students · Composite band · Computed ${computedDate}`}
       headerActions={<TtgHeaderActions />}
     >
       <Breadcrumb
         items={[
           { label: "Operation TTG", href: "/" },
           { label: "Manteca USD", href: "/dashboard" },
-          { label: "Overview" },
+          { label: "Roster" },
         ]}
       />
-      <OverviewClient data={data} />
+      <RosterClient students={data.students} />
     </DashboardShell>
   );
 }

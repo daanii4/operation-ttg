@@ -5,7 +5,8 @@ export type BandKey = "green" | "yellow" | "red" | "locked" | "escalation";
 
 type BadgeProps = {
   band: BandKey;
-  icon: LucideIcon;
+  /** Optional leading icon. When omitted, the badge renders text only. */
+  icon?: LucideIcon;
   variant?: "default" | "inverse" | "outline";
   size?: "sm" | "md";
   className?: string;
@@ -52,7 +53,7 @@ export function Badge({
           className,
         ].join(" ")}
       >
-        <Icon className="h-3 w-3" aria-hidden />
+        {Icon ? <Icon className="h-3 w-3" aria-hidden /> : null}
         {children}
       </span>
     );
@@ -71,7 +72,7 @@ export function Badge({
           borderColor: `color-mix(in srgb, ${c} 60%, transparent)`,
         }}
       >
-        <Icon className="h-3 w-3" aria-hidden />
+        {Icon ? <Icon className="h-3 w-3" aria-hidden /> : null}
         {children}
       </span>
     );
@@ -87,7 +88,7 @@ export function Badge({
       ].join(" ")}
       style={{ color: c, borderColor: `color-mix(in srgb, ${c} 60%, transparent)` }}
     >
-      <Icon className="h-2.5 w-2.5" aria-hidden />
+      {Icon ? <Icon className="h-2.5 w-2.5" aria-hidden /> : null}
       {children}
     </span>
   );

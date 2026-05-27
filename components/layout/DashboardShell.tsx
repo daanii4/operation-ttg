@@ -3,7 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { BarChart3, Map, PanelLeftClose, type LucideIcon } from "lucide-react";
+import {
+  ClipboardCheck,
+  FileText,
+  LayoutDashboard,
+  Map,
+  PanelLeftClose,
+  Settings,
+  TrendingUp,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import SignOutButton from "@/components/auth/SignOutButton";
 import { useLocalStorageBoolean } from "@/lib/hooks/use-local-storage-boolean";
@@ -15,13 +25,52 @@ type NavLinkItem = {
   label: string;
   icon: LucideIcon;
   section: (typeof NAV_SECTIONS)[number];
+  /** Only highlight on exact pathname match (used for /dashboard so child routes don't activate it). */
+  exact?: boolean;
 };
 
+/**
+ * Sprint 5 sidebar (May 2026):
+ * The single Analytics tab is replaced by six purpose-built tabs. Each tab is
+ * a top-level sidebar entry. Order is fixed so muscle memory across advisors
+ * stays consistent.
+ */
 const NAV_LINKS: NavLinkItem[] = [
   {
-    href: "/dashboard/analytics",
-    label: "Analytics",
-    icon: BarChart3,
+    href: "/dashboard",
+    label: "Overview",
+    icon: LayoutDashboard,
+    section: "Main",
+    exact: true,
+  },
+  {
+    href: "/dashboard/roster",
+    label: "Roster",
+    icon: Users,
+    section: "Main",
+  },
+  {
+    href: "/dashboard/eligibility",
+    label: "Eligibility",
+    icon: ClipboardCheck,
+    section: "Main",
+  },
+  {
+    href: "/dashboard/trajectory",
+    label: "Trajectory",
+    icon: TrendingUp,
+    section: "Main",
+  },
+  {
+    href: "/dashboard/briefings",
+    label: "Briefings",
+    icon: FileText,
+    section: "Main",
+  },
+  {
+    href: "/dashboard/settings",
+    label: "Settings",
+    icon: Settings,
     section: "Main",
   },
   {
@@ -37,13 +86,11 @@ function normalizePath(pathname: string | null): string {
   return pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
 }
 
-function isNavActive(pathname: string | null, href: string): boolean {
+function isNavActive(pathname: string | null, link: NavLinkItem): boolean {
   const p = normalizePath(pathname);
   if (!p) return false;
-  if (href === "/dashboard/analytics") {
-    return p === "/dashboard" || p.startsWith("/dashboard/");
-  }
-  return p === href || p.startsWith(`${href}/`);
+  if (link.exact) return p === link.href;
+  return p === link.href || p.startsWith(`${link.href}/`);
 }
 
 function NavLinks({
@@ -100,7 +147,7 @@ function NavLinks({
               {section}
             </p>
             {sectionLinks.map((link) => {
-              const active = isNavActive(pathname, link.href);
+              const active = isNavActive(pathname, link);
               const idx = staggerIndex++;
               return (
                 <Link

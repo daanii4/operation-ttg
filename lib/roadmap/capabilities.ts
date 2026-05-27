@@ -52,8 +52,11 @@ export const ROADMAP_CAPABILITIES: RoadmapCapability[] = [
     detail: "Holistic KPI grid, approaching deadlines, NCAA readiness, student roster.",
     priority: 20,
     probe: {
-      implementation: ["app/dashboard/analytics/page.tsx", "app/api/cohort/route.ts"],
-      wiring: ["app/dashboard/analytics/CohortClient.tsx"],
+      // Sprint 5 (May 2026) split the single Analytics tab into Overview +
+      // Roster pages; the Overview page still owns the holistic KPIs and the
+      // band distribution chart, while the roster table moved to its own tab.
+      implementation: ["app/dashboard/page.tsx", "app/api/cohort/route.ts"],
+      wiring: ["app/dashboard/OverviewClient.tsx", "app/dashboard/roster/RosterClient.tsx"],
     },
     agentQuestions: [],
   },
@@ -61,13 +64,13 @@ export const ROADMAP_CAPABILITIES: RoadmapCapability[] = [
     id: "cohort-band-chart",
     phaseId: "v0.1",
     label: "Band distribution chart",
-    detail: "Lock-window histogram by risk band on Analytics, mounted above the student roster.",
+    detail: "Lock-window histogram by risk band on the Overview tab, mounted above the deadlines panel.",
     priority: 25,
     probe: {
       implementation: ["components/ttg/DistributionChart.tsx"],
       wiringContains: [
         {
-          path: "app/dashboard/analytics/CohortClient.tsx",
+          path: "app/dashboard/OverviewClient.tsx",
           needle: "DistributionChart",
         },
       ],
