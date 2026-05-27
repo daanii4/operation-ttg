@@ -376,6 +376,22 @@ model NcaEligibilityChecklistState {
   @@schema("ttg")
 }
 
+model PdfExportJob {
+  id           String   @id @default(uuid())
+  advisor_id   String
+  job_type     String   // 'student_briefing' | 'cohort_summary'
+  status       String   // 'pending' | 'generating' | 'ready' | 'failed'
+  student_id   String?  // set for student_briefing type
+  error        String?
+  pdf_buffer   Bytes?   // stored as binary — cleared after 1 hour TTL
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@index([advisor_id, status])
+  @@map("pdf_export_jobs")
+  @@schema("ttg")
+}
+
 model NcaEligibilityChecklistEvent {
   id              String               @id @default(cuid())
   state           NcaEligibilityChecklistState @relation(fields: [stateId], references: [id], onDelete: Cascade)
