@@ -10,7 +10,7 @@ type IdentityHeaderProps = {
   sport: string;
   highSchool: string;
   targetDivision: string;
-  riskBand: "GREEN" | "YELLOW" | "RED" | "LOCKED" | "NOT_APPLICABLE";
+  riskBand: "GREEN" | "YELLOW" | "RED" | "LOCKED" | "ESCALATED" | "NOT_APPLICABLE";
 };
 
 const BAND_KEY: Record<string, BandKey> = {
@@ -18,6 +18,7 @@ const BAND_KEY: Record<string, BandKey> = {
   YELLOW: "yellow",
   RED: "red",
   LOCKED: "locked",
+  ESCALATED: "escalation",
 };
 
 export function IdentityHeader({
@@ -74,9 +75,14 @@ export function IdentityHeader({
           </div>
         </div>
         {riskBand !== "NOT_APPLICABLE" && vocabulary && (
-          <Badge variant="inverse" band={BAND_KEY[riskBand]} icon={vocabulary.icon}>
-            {vocabulary.label}
-          </Badge>
+          <div className="relative">
+            {riskBand === "ESCALATED" ? (
+              <span className="absolute -inset-1 inline-flex animate-ping rounded-sm border border-band-urgent-border" />
+            ) : null}
+            <Badge variant="inverse" band={BAND_KEY[riskBand]} icon={vocabulary.icon} className="relative">
+              {vocabulary.label}
+            </Badge>
+          </div>
         )}
       </div>
     </Card>

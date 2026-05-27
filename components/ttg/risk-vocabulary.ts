@@ -8,6 +8,7 @@ import {
 import type { BandKey } from "@/components/ui/Badge";
 
 export type RiskBand = "GREEN" | "YELLOW" | "RED" | "LOCKED";
+export type CompositeRiskBand = RiskBand | "ESCALATED";
 
 export type RiskVocabulary = {
   label: string;
@@ -16,7 +17,7 @@ export type RiskVocabulary = {
   band: BandKey;
 };
 
-export const RISK_VOCABULARY: Record<RiskBand, RiskVocabulary> = {
+export const RISK_VOCABULARY: Record<CompositeRiskBand, RiskVocabulary> = {
   GREEN: {
     label: "On Track",
     subLabel: "Universal Support",
@@ -40,5 +41,11 @@ export const RISK_VOCABULARY: Record<RiskBand, RiskVocabulary> = {
     subLabel: "Alternative Pathway",
     icon: GitBranch,
     band: "locked",
+  },
+  ESCALATED: {
+    label: "Escalated",
+    subLabel: "Immediate Action",
+    icon: AlertTriangle,
+    band: "escalation",
   },
 };

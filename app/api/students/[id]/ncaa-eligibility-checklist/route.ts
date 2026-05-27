@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { handleAuthError } from "@/lib/auth/api-errors";
-import { requireTtgSession } from "@/lib/auth/session";
+import { getTtgSession } from "@/lib/auth/session";
 import { z } from "zod";
 import type { NcaaChecklistItemKey } from "@prisma/client";
 import { prismaTtg } from "@/lib/prisma";
@@ -140,6 +139,14 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const session = await getTtgSession();
+  if (!session || session.userId === "anonymous") {
+    return NextResponse.json(
+      { error: "Unauthorized", code: "UNAUTHORIZED" },
+      { status: 401 }
+    );
+  }
+
   const studentMeta = getStudentProfileForChecklist(params.id);
   if (!studentMeta) {
     return NextResponse.json(
@@ -157,8 +164,8 @@ export async function PATCH(
   }
 
   const { itemKey, checked } = parse.data;
-  const actorId = "system_demo_advisor";
-  const actorName = "Demo Advisor";
+  const actorId = session.userId;
+  const actorName = session.name ?? session.email ?? "Advisor";
 
   const result = await prismaTtg.$transaction(async (tx) => {
     const stateRecord = await tx.ncaEligibilityChecklistState.upsert({

@@ -6,6 +6,7 @@ import StudentProfileClient from "./StudentProfileClient";
 import { computeAllDemoResults } from "@/lib/seed/demo-data";
 import { getHolisticProfile } from "@/lib/seed/holistic-data";
 import { attachOverallRisk } from "@/lib/calculations/holistic-rollup";
+import { getTtgSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
   title: "Student Profile · Operation TTG",
@@ -16,6 +17,7 @@ export default async function StudentProfilePage({
 }: {
   params: { id: string };
 }) {
+  const session = await getTtgSession();
   const allResults = computeAllDemoResults();
   const found = allResults.find((r) => r.studentId === params.id);
 
@@ -38,6 +40,8 @@ export default async function StudentProfilePage({
       getHolisticProfile(found.studentId),
       found.f5.applicable ? found.f5.riskBand : "NOT_APPLICABLE"
     ),
+    isDemoStudent: true,
+    sessionUserId: session?.userId ?? null,
   };
 
   const fullName = `${found.firstName} ${found.lastName}`;

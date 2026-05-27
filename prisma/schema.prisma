@@ -211,6 +211,10 @@ model StudentAthlete {
 
   courses             CourseRecord[]
   f5Results           F5Result[]
+  compositeBandAcknowledgments CompositeBandAcknowledgment[]
+  gradeUpdates        GradeUpdate[]
+  aimsAssessments     AimsAssessment[]
+  engagementObservations EngagementObservation[]
 
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
@@ -218,6 +222,22 @@ model StudentAthlete {
   @@index([advisorId])
   @@index([highSchoolId])
 
+  @@schema("ttg")
+}
+
+model CompositeBandAcknowledgment {
+  id                      String   @id @default(uuid())
+  student_id              String
+  advisor_id              String
+  band_transition         String
+  acknowledged_at         DateTime @default(now())
+  cryptographic_signature String
+  conditions_snapshot     Json
+
+  student StudentAthlete @relation(fields: [student_id], references: [id])
+
+  @@index([student_id])
+  @@map("composite_band_acknowledgments")
   @@schema("ttg")
 }
 
@@ -229,20 +249,76 @@ model CourseRecord {
   studentId             String
   courseName            String
   gradeLetterNormalized String
+  term                  String?
   termEndDate           DateTime
   termLength            String   @default("semester")
   academicYear          String?
+  dataSourceClass       String   @default("B")
   ncaaD1Category        String?
   ncaaApproved          Boolean        @default(false)
   agCategory            String?
   classificationUpdatedAt DateTime?
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
+  gradeUpdates          GradeUpdate[]
 
   @@index([studentId])
 
   @@schema("ttg")
 }
+
+model GradeUpdate {
+  id                String        @id @default(uuid())
+  student_id        String
+  course_record_id  String
+  observed_grade    String
+  observed_at       DateTime
+  data_source_class String
+  advisor_id        String
+
+  student      StudentAthlete @relation(fields: [student_id], references: [id])
+  courseRecord CourseRecord   @relation(fields: [course_record_id], references: [id])
+
+  @@index([student_id, observed_at])
+  @@map("grade_updates")
+  @@schema("ttg")
+}
+
+model AimsAssessment {
+  id                         String        @id @default(uuid())
+  student_id                 String
+  social_identity_score      Float
+  exclusivity_score          Float
+  negative_affectivity_score Float
+  administered_at            DateTime
+  aims_version               String
+  data_source_class          String
+
+  student StudentAthlete @relation(fields: [student_id], references: [id])
+
+  @@index([student_id, administered_at])
+  @@map("aims_assessments")
+  @@schema("ttg")
+}
+
+model EngagementObservation {
+  id                String        @id @default(uuid())
+  student_id        String
+  observed_at       DateTime
+  engagement_type   String
+  value             Float
+  raw_value         String?
+  context           String?
+  data_source_class String
+  advisor_id        String
+
+  student StudentAthlete @relation(fields: [student_id], references: [id])
+
+  @@index([student_id, observed_at])
+  @@map("engagement_observations")
+  @@schema("ttg")
+}
+
 
 // ─── F5 RESULT ───────────────────────────────────────────────────────────────
 

@@ -20,7 +20,7 @@ const SCHOOLS = [
   {
     id: "hs_manteca_high",
     schoolName: "Manteca High School",
-    ceebCode: "TODO_CEEB_manteca-high",
+    ceebCode: "051900", // Verified: NCAA HS Portal, May 2026
     city: "Manteca",
     seniorFallTermStart: new Date("2026-08-17"),
     summerTermEnd: new Date("2026-08-01"),
@@ -28,7 +28,7 @@ const SCHOOLS = [
   {
     id: "hs_east_union_high",
     schoolName: "East Union High School",
-    ceebCode: "TODO_CEEB_east-union-high",
+    ceebCode: "051899", // Verified: NCAA HS Portal, May 2026
     city: "Manteca",
     seniorFallTermStart: new Date("2026-08-17"),
     summerTermEnd: new Date("2026-08-01"),
@@ -36,7 +36,7 @@ const SCHOOLS = [
   {
     id: "hs_sierra_high",
     schoolName: "Sierra High School",
-    ceebCode: "TODO_CEEB_sierra-high",
+    ceebCode: "051903", // Verified: NCAA HS Portal, May 2026
     city: "Manteca",
     seniorFallTermStart: new Date("2026-08-17"),
     summerTermEnd: new Date("2026-08-01"),
@@ -44,7 +44,7 @@ const SCHOOLS = [
   {
     id: "hs_weston_ranch_high",
     schoolName: "Weston Ranch High School",
-    ceebCode: "TODO_CEEB_weston-ranch-high",
+    ceebCode: "053839", // Verified: NCAA HS Portal, May 2026
     city: "Stockton",
     seniorFallTermStart: new Date("2026-08-17"),
     summerTermEnd: new Date("2026-08-01"),
