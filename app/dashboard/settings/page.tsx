@@ -8,6 +8,9 @@ import { listTeam } from "@/lib/team/team-service";
 import QnShell from "@/components/layout/qn/QnShell";
 import SettingsTeamSection from "./SettingsTeamSection";
 import SettingsThresholdsSection from "./SettingsThresholdsSection";
+import SettingsDataFeedsSection from "./SettingsDataFeedsSection";
+import { isDataFeedEnabled } from "@/lib/ingestion/guards";
+import { buildCohortResponse } from "@/lib/cohort/build-cohort-response";
 import { prismaTtg } from "@/lib/prisma";
 
 export const metadata: Metadata = {
@@ -53,6 +56,38 @@ export default async function SettingsPage({
       }))
     )
     .catch(() => []);
+
+  // Sprint 7 / Workstream A-6 — feed status + default student for the
+  // ingestion form. Server-load both so the page hydrates without a flash.
+  const lastIngestion = await prismaTtg.classAFeedJob
+    .findFirst({
+      where: { status: "complete" },
+      orderBy: { updated_at: "desc" },
+      select: {
+        id: true,
+        provider: true,
+        updated_at: true,
+        records_written: true,
+      },
+    })
+    .catch(() => null);
+
+  const dataFeedStatus = {
+    enabled: isDataFeedEnabled(),
+    provider: "transcript_api",
+    providerStatus: "stub-pending-mcp-2",
+    lastIngestion: lastIngestion
+      ? {
+          jobId: lastIngestion.id,
+          provider: lastIngestion.provider,
+          completedAt: lastIngestion.updated_at.toISOString(),
+          recordsWritten: lastIngestion.records_written ?? 0,
+        }
+      : null,
+  };
+
+  const cohort = await buildCohortResponse().catch(() => null);
+  const defaultStudentId = cohort?.students[0]?.studentId ?? null;
 
   return (
     <QnShell pageTitle="Settings" eyebrow="SETTINGS" advisor={advisor}>
@@ -175,6 +210,13 @@ export default async function SettingsPage({
           canEdit={canManageTeam}
           initialRows={thresholdRows}
         />
+
+        {canManageTeam ? (
+          <SettingsDataFeedsSection
+            initialStatus={dataFeedStatus}
+            defaultStudentId={defaultStudentId}
+          />
+        ) : null}
 
         <Card>
           <h2
