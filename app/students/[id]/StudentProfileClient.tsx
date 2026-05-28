@@ -17,7 +17,13 @@ import NcaaEligibilityCenterStatus from "@/components/ttg/NcaaEligibilityCenterS
 import NcaaApprovedCoursesPanel from "@/components/ttg/NcaaApprovedCoursesPanel";
 import EligibilityPanels from "@/components/ttg/EligibilityPanels";
 import type { HolisticStudentRisk } from "@/lib/calculations/holistic-rollup";
-import { ESCALATION_LABELS } from "@/lib/calculations/escalation-labels";
+import { escalationLabel } from "@/lib/calculations/escalation-labels";
+import {
+  aimsFlagLabel,
+  aimsRiskLabel,
+  engagementTrendLabel,
+  trajectoryDirectionLabel,
+} from "@/lib/calculations/display-labels";
 import { INTERVENTION_LABELS } from "@/lib/calculations/intervention-labels";
 
 type ProfileData = {
@@ -187,8 +193,7 @@ export default function StudentProfileClient({ data }: { data: ProfileData }) {
           <div className="w-full max-w-xl rounded-lg border border-band-urgent-border bg-surface-card p-6 shadow-2xl">
             <h2 className="font-serif text-[22px] text-text-primary">Escalation review required</h2>
             <p className="mt-2 font-sans text-[13px] text-text-secondary">
-              {ESCALATION_LABELS[escalationState?.escalation_reason ?? ""] ??
-                "A critical eligibility condition requires advisor acknowledgment."}
+              {escalationLabel(escalationState?.escalation_reason ?? null)}
             </p>
             {ackError ? (
               <p className="mt-3 font-sans text-[12px] text-band-urgent">{ackError}</p>
@@ -249,6 +254,12 @@ export default function StudentProfileClient({ data }: { data: ProfileData }) {
             className="rounded border border-[color:var(--border-default)] px-3 py-1.5 font-sans text-[12px] font-semibold text-text-primary transition-colors hover:bg-surface-inner"
           >
             Add transcript course
+          </Link>
+          <Link
+            href={`/students/${data.studentId}/transcript/ocr`}
+            className="rounded border border-[color:var(--border-default)] px-3 py-1.5 font-sans text-[12px] font-semibold text-text-primary transition-colors hover:bg-surface-inner"
+          >
+            Upload transcript
           </Link>
         </div>
         <NcaaApprovedCoursesPanel
@@ -330,31 +341,31 @@ export default function StudentProfileClient({ data }: { data: ProfileData }) {
                     <tr className="border-t border-[color:var(--border-default)]">
                       <td className="px-3 py-2 font-sans text-[13px] text-text-primary">Trajectory</td>
                       <td className="px-3 py-2 font-sans text-[13px] text-text-primary">
-                        {masterBriefing.layer_summary.trajectory.direction ?? "—"}
+                        {trajectoryDirectionLabel(masterBriefing.layer_summary.trajectory.direction)}
                       </td>
                       <td className="px-3 py-2 font-sans text-[13px] text-text-secondary">
-                        {masterBriefing.layer_summary.trajectory.regression ? "regression_flag" : "—"}
+                        {masterBriefing.layer_summary.trajectory.regression ? "Regression flagged" : "—"}
                       </td>
                     </tr>
                     <tr className="border-t border-[color:var(--border-default)]">
                       <td className="px-3 py-2 font-sans text-[13px] text-text-primary">AIMS</td>
                       <td className="px-3 py-2 font-sans text-[13px] text-text-primary">
-                        {masterBriefing.layer_summary.aims.risk_band}
+                        {aimsRiskLabel(masterBriefing.layer_summary.aims.risk_band)}
                       </td>
                       <td className="px-3 py-2 font-sans text-[13px] text-text-secondary">
-                        {masterBriefing.layer_summary.aims.flags[0] ?? "—"}
+                        {masterBriefing.layer_summary.aims.flags[0] ? aimsFlagLabel(masterBriefing.layer_summary.aims.flags[0]) : "—"}
                       </td>
                     </tr>
                     <tr className="border-t border-[color:var(--border-default)]">
                       <td className="px-3 py-2 font-sans text-[13px] text-text-primary">Engagement</td>
                       <td className="px-3 py-2 font-sans text-[13px] text-text-primary">
-                        {masterBriefing.layer_summary.engagement.trend}
+                        {engagementTrendLabel(masterBriefing.layer_summary.engagement.trend)}
                       </td>
                       <td className="px-3 py-2 font-sans text-[13px] text-text-secondary">
                         {masterBriefing.layer_summary.engagement.withdrawal
-                          ? "withdrawal_flag"
+                          ? "Withdrawal pattern detected"
                           : masterBriefing.layer_summary.engagement.low
-                            ? "low_engagement_flag"
+                            ? "Low engagement"
                             : "—"}
                       </td>
                     </tr>
