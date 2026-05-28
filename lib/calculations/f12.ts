@@ -17,7 +17,11 @@ function toQualifierBand(status: string): string {
   return "GREEN";
 }
 
-function deriveWeeksToCriticalAction(student: StudentBriefingInput, f8: F8Result): number | null {
+function deriveWeeksToCriticalAction(
+  student: StudentBriefingInput,
+  f8: F8Result,
+  yellowActionWeeks: number
+): number | null {
   if (f8.composite_band === "ESCALATED") return 0;
   if (f8.composite_band === "RED") return 1;
   if (student.lock_in_date) {
@@ -25,13 +29,19 @@ function deriveWeeksToCriticalAction(student: StudentBriefingInput, f8: F8Result
     return Math.max(0, Math.floor(diffDays / 7));
   }
   if (f8.composite_band === "YELLOW") {
-    // THRESHOLD_PENDING_AD5_CALIBRATION: 4-week YELLOW action window is a placeholder.
-    // Replace with conference-specific data from AD-5 calibration study.
-    return 4;
+    // THRESHOLD_PENDING_AD5_CALIBRATION → DB key 'f12.yellow_action_weeks' — update via Settings > Thresholds.
+    return yellowActionWeeks;
   }
   if (f8.composite_band === "GREEN") return null;
   return null;
 }
+
+export interface F12Config {
+  /** DB key 'f12.yellow_action_weeks' — update via Settings > Thresholds. */
+  yellowActionWeeks?: number;
+}
+
+const DEFAULT_YELLOW_ACTION_WEEKS = 4;
 
 export function calcMasterBriefing(
   student: StudentBriefingInput,
@@ -44,8 +54,10 @@ export function calcMasterBriefing(
   f8: F8Result,
   f9: F9Result,
   f10: F10Result,
-  f11: F11Result
+  f11: F11Result,
+  config: F12Config = {}
 ): F12Result {
+  const yellowActionWeeks = config.yellowActionWeeks ?? DEFAULT_YELLOW_ACTION_WEEKS;
   const codes: InterventionCode[] = [];
   if (f8.escalation_required) codes.push("IMMEDIATE_ADVISOR_CONTACT");
   if (f8.composite_band === "RED" && !f8.escalation_required) codes.push("D1_PATHWAY_REVIEW");
@@ -58,7 +70,7 @@ export function calcMasterBriefing(
   if (codes.length === 0) codes.push("NO_ACTION_REQUIRED");
 
   const intervention_codes = dedupePreserveOrder(codes);
-  const weeks_to_critical_action = deriveWeeksToCriticalAction(student, f8);
+  const weeks_to_critical_action = deriveWeeksToCriticalAction(student, f8, yellowActionWeeks);
 
   const evidenceTiers = [f1.evidenceTier, f3.evidenceTier, f4.evidenceTier, f6.evidenceTier, f7.evidenceTier, f9.evidence_tier, f10.evidence_tier, f11.evidence_tier];
   const overall_evidence_tier =

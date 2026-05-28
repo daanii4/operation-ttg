@@ -14,8 +14,17 @@ function mean(values: number[]): number | null {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
+export interface F11Config {
+  /** DB key 'f11.low_engagement_cutoff' — update via Settings > Thresholds. */
+  lowEngagementCutoff?: number;
+}
+
+/** Default kept in sync with prisma/seed/thresholds.ts. Code reads via getThreshold(). */
+const DEFAULT_LOW_ENGAGEMENT_CUTOFF = 0.4;
+
 export function calcEngagementMetrics(
   observations: EngagementObservationInput[],
+  config: F11Config = {},
   referenceDate: Date = new Date()
 ): F11Result {
   const windowStart = new Date(referenceDate.getTime() - 28 * DAY_MS);
@@ -75,8 +84,9 @@ export function calcEngagementMetrics(
     else trend = "stable";
   }
 
-  // THRESHOLD_PENDING_D5: 0.40 low-engagement cutoff — placeholder pending D5 normative calibration
-  const low_engagement_flag = window_avg !== null && window_avg < 0.4;
+  // THRESHOLD_PENDING_D5 → DB key 'f11.low_engagement_cutoff' — update via Settings > Thresholds.
+  const lowEngagementCutoff = config.lowEngagementCutoff ?? DEFAULT_LOW_ENGAGEMENT_CUTOFF;
+  const low_engagement_flag = window_avg !== null && window_avg < lowEngagementCutoff;
 
   return {
     window_avg,

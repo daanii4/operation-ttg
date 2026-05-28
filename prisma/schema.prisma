@@ -231,6 +231,8 @@ model StudentAthlete {
   engagementObservations       EngagementObservation[]
   ocrJobs                      OcrJob[]
   advisorAssignments           StudentAdvisorAssignment[]
+  mlTrajectoryScores           MlTrajectoryScore[]
+  classAFeedJobs               ClassAFeedJob[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -472,6 +474,84 @@ model OcrJob {
 
   @@index([advisor_id, status])
   @@map("ocr_jobs")
+  @@schema("ttg")
+}
+
+/// Sprint 7 / Workstream ML — per-student trajectory scores.
+/// Advisory only — never overrides F8 composite band determination.
+model MlTrajectoryScore {
+  id               String   @id @default(uuid())
+  student_id       String
+  score            Float
+  confidence_lower Float
+  confidence_upper Float
+  feature_vector   Json
+  model_version    String
+  risk_tier        String
+  computed_at      DateTime @default(now())
+
+  student StudentAthlete @relation(fields: [student_id], references: [id])
+
+  @@index([student_id, computed_at])
+  @@map("ml_trajectory_scores")
+  @@schema("ttg")
+}
+
+/// Sprint 7 / Workstream ML — model training snapshots.
+/// Outcome label is set at the time the snapshot is taken; weights are
+/// retrained offline and bumped via a model_version change.
+model MlTrainingSnapshot {
+  id             String   @id @default(uuid())
+  student_id     String
+  feature_vector Json
+  outcome        Boolean
+  snapshot_date  DateTime
+  model_version  String
+  data_class     String
+
+  @@index([model_version])
+  @@map("ml_training_snapshots")
+  @@schema("ttg")
+}
+
+/// Sprint 7 / Workstream A — Class A verified data feed ingestion jobs.
+/// Disabled by default; only runs when DATA_FEED_ENABLED=true.
+model ClassAFeedJob {
+  id              String   @id @default(uuid())
+  student_id      String
+  provider        String
+  status          String
+  records_fetched Int?
+  records_written Int?
+  error           String?
+  raw_payload     Bytes?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  student StudentAthlete @relation(fields: [student_id], references: [id])
+
+  @@index([student_id, status])
+  @@map("class_a_feed_jobs")
+  @@schema("ttg")
+}
+
+/// Sprint 7 / Workstream T — calibrated thresholds.
+/// Code reads via lib/config/thresholds.getThreshold(); never hardcodes.
+model ThresholdConfig {
+  id            String    @id @default(uuid())
+  key           String
+  value         Float
+  description   String
+  ticket        String
+  conference    String?
+  calibrated_by String?
+  calibrated_at DateTime?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  @@unique([key, conference])
+  @@index([key, conference])
+  @@map("threshold_configs")
   @@schema("ttg")
 }
 

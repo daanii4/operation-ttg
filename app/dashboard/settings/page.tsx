@@ -7,6 +7,8 @@ import { hasPermission } from "@/lib/auth/ttg-permissions";
 import { listTeam } from "@/lib/team/team-service";
 import QnShell from "@/components/layout/qn/QnShell";
 import SettingsTeamSection from "./SettingsTeamSection";
+import SettingsThresholdsSection from "./SettingsThresholdsSection";
+import { prismaTtg } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "Settings · Operation TTG",
@@ -35,6 +37,22 @@ export default async function SettingsPage({
       : null;
 
   const teamForbiddenError = searchParams?.error === "team_manage_forbidden";
+
+  // Sprint 7 / Workstream T-5 — load global thresholds server-side.
+  const thresholdRows = await prismaTtg.thresholdConfig
+    .findMany({ where: { conference: null }, orderBy: { key: "asc" } })
+    .then((rows) =>
+      rows.map((r) => ({
+        id: r.id,
+        key: r.key,
+        value: r.value,
+        description: r.description,
+        ticket: r.ticket,
+        calibratedBy: r.calibrated_by,
+        calibratedAt: r.calibrated_at?.toISOString() ?? null,
+      }))
+    )
+    .catch(() => []);
 
   return (
     <QnShell pageTitle="Settings" eyebrow="SETTINGS" advisor={advisor}>
@@ -151,6 +169,11 @@ export default async function SettingsPage({
           canManageTeam={canManageTeam}
           team={team}
           callerAdvisorId={session?.userId ?? null}
+        />
+
+        <SettingsThresholdsSection
+          canEdit={canManageTeam}
+          initialRows={thresholdRows}
         />
 
         <Card>

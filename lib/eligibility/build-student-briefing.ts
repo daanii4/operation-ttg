@@ -72,9 +72,46 @@ export type StudentBriefingResult =
   | { found: true; record: StudentBriefingRecord }
   | { found: false };
 
+/**
+ * Sprint 7 / Workstream T-4 — calibrated thresholds.
+ * Optional so existing callers don't break; the default values match the
+ * THRESHOLD_PENDING_* placeholders that lived in code before Sprint 7.
+ */
+export interface BriefingThresholds {
+  /** F10 within-subject AIMS delta cutoff. DB key: 'f10.pct_delta_threshold'. */
+  aimsPctDelta?: number;
+  /** F11 low-engagement cutoff. DB key: 'f11.low_engagement_cutoff'. */
+  lowEngagementCutoff?: number;
+  /** F12 weeks_to_critical_action assigned to YELLOW band. DB key: 'f12.yellow_action_weeks'. */
+  yellowActionWeeks?: number;
+  /** ML confidence margin around the score. DB key: 'ml.confidence_margin'. */
+  mlConfidenceMargin?: number;
+}
+
+export const DEFAULT_BRIEFING_THRESHOLDS: Required<BriefingThresholds> = {
+  aimsPctDelta: 0.2,
+  lowEngagementCutoff: 0.4,
+  yellowActionWeeks: 4,
+  mlConfidenceMargin: 0.12,
+};
+
+function resolveThresholds(input?: BriefingThresholds): Required<BriefingThresholds> {
+  return {
+    aimsPctDelta: input?.aimsPctDelta ?? DEFAULT_BRIEFING_THRESHOLDS.aimsPctDelta,
+    lowEngagementCutoff:
+      input?.lowEngagementCutoff ?? DEFAULT_BRIEFING_THRESHOLDS.lowEngagementCutoff,
+    yellowActionWeeks:
+      input?.yellowActionWeeks ?? DEFAULT_BRIEFING_THRESHOLDS.yellowActionWeeks,
+    mlConfidenceMargin:
+      input?.mlConfidenceMargin ?? DEFAULT_BRIEFING_THRESHOLDS.mlConfidenceMargin,
+  };
+}
+
 export async function buildStudentBriefing(
-  studentId: string
+  studentId: string,
+  thresholdInput?: BriefingThresholds
 ): Promise<StudentBriefingResult> {
+  const thresholds = resolveThresholds(thresholdInput);
   const demo = ALL_DEMO_STUDENTS.find((d) => d.student.id === studentId);
   if (!demo) return { found: false };
 
@@ -148,8 +185,8 @@ export async function buildStudentBriefing(
     })),
     {
       method: "within_subject_pct_delta_v0.1_placeholder",
-      // THRESHOLD_PENDING_D3: kept in sync with /api/students/[id]/eligibility.
-      pct_delta_threshold: 0.2,
+      // THRESHOLD_PENDING_D3 → DB key 'f10.pct_delta_threshold' — update via Settings > Thresholds.
+      pct_delta_threshold: thresholds.aimsPctDelta,
     }
   );
   const f11 = calcEngagementMetrics(
@@ -163,7 +200,8 @@ export async function buildStudentBriefing(
         | "self_report_motivation",
       value: row.value,
       data_source_class: row.data_source_class as "A" | "B" | "C",
-    }))
+    })),
+    { lowEngagementCutoff: thresholds.lowEngagementCutoff }
   );
 
   const referenceDate = new Date();
@@ -186,7 +224,8 @@ export async function buildStudentBriefing(
     f8,
     f9,
     f10,
-    f11
+    f11,
+    { yellowActionWeeks: thresholds.yellowActionWeeks }
   );
 
   return {
