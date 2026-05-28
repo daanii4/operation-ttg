@@ -25,13 +25,24 @@ const INLINE_DESCRIPTION_LIMIT = 40;
 
 export interface InterventionCodesProps {
   f12: F12Result | null;
+  /**
+   * Render a 1px bottom border on the section so the next section sits
+   * flush against a divider without us injecting a separator div inside
+   * the briefing card body (forbidden by QuasarNova v1 §8 item 24).
+   */
+  sectionBorder?: boolean;
 }
 
-export function InterventionCodes({ f12 }: InterventionCodesProps) {
+export function InterventionCodes({ f12, sectionBorder }: InterventionCodesProps) {
   const rows = f12 ? selectInterventionRows(f12) : [];
 
   return (
-    <section style={{ padding: "20px 28px" }}>
+    <section
+      style={{
+        padding: "20px 28px",
+        borderBottom: sectionBorder ? "1px solid var(--color-border)" : undefined,
+      }}
+    >
       <p
         className="text-[11px] font-semibold uppercase"
         style={{ color: "var(--color-muted)", letterSpacing: "0.06em" }}

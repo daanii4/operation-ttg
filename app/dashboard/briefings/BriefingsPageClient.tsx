@@ -212,8 +212,7 @@ function MobileBriefing({
           </div>
         ) : null}
 
-        <InterventionCodes f12={data.f12!} />
-        <div style={{ borderTop: "1px solid var(--color-border)" }} />
+        <InterventionCodes f12={data.f12!} sectionBorder />
         <LayerSummary payload={data} />
 
         <div
