@@ -1,77 +1,174 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import DashboardShell from "@/components/layout/DashboardShell";
-import TtgHeaderActions from "@/components/layout/TtgHeaderActions";
-import Breadcrumb from "@/components/layout/Breadcrumb";
-import Card from "@/components/ui/Card";
+import { ensureAdvisorProfile } from "@/lib/auth/advisor-profile";
+import { getAdvisorDisplay } from "@/lib/auth/advisor-identity";
 import { getTtgSession } from "@/lib/auth/session";
+import { hasPermission } from "@/lib/auth/ttg-permissions";
+import { listTeam } from "@/lib/team/team-service";
+import QnShell from "@/components/layout/qn/QnShell";
+import SettingsTeamSection from "./SettingsTeamSection";
 
 export const metadata: Metadata = {
   title: "Settings · Operation TTG",
 };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams?: { error?: string };
+}) {
   const session = await getTtgSession();
+  const advisor = await getAdvisorDisplay();
   const isAdmin = session?.role === "ADMIN";
 
+  const profile =
+    session && session.userId !== "anonymous"
+      ? await ensureAdvisorProfile(session).catch(() => null)
+      : null;
+  const canManageTeam = profile
+    ? hasPermission(profile.teamRole, "team:manage")
+    : false;
+
+  const team =
+    session && session.userId !== "anonymous"
+      ? await listTeam(session).catch(() => null)
+      : null;
+
+  const teamForbiddenError = searchParams?.error === "team_manage_forbidden";
+
   return (
-    <DashboardShell
-      eyebrow="SETTINGS"
-      pageTitle="Settings"
-      pageSubtitle="District seed data · school CEEB codes · advisor account · data source class reference"
-      headerActions={<TtgHeaderActions />}
-    >
-      <Breadcrumb
-        items={[
-          { label: "Operation TTG", href: "/" },
-          { label: "Manteca USD", href: "/dashboard" },
-          { label: "Settings" },
-        ]}
-      />
+    <QnShell pageTitle="Settings" eyebrow="SETTINGS" advisor={advisor}>
+      <div
+        style={{
+          maxWidth: 1280,
+          marginLeft: "auto",
+          marginRight: "auto",
+          paddingLeft: 32,
+          paddingRight: 32,
+          paddingTop: 24,
+          paddingBottom: 28,
+        }}
+      >
+        {teamForbiddenError ? (
+          <div
+            role="alert"
+            style={{
+              padding: "12px 16px",
+              background: "var(--color-red-tint)",
+              borderLeft: "3px solid var(--color-red)",
+              borderRadius: 6,
+              color: "var(--color-red)",
+              fontSize: 13,
+              marginBottom: 16,
+            }}
+          >
+            Owner access required to manage the team. The Team page is read-only
+            for advisors and viewers.
+          </div>
+        ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card variant="default" padding="lg">
-          <h2 className="font-serif text-[18px] text-text-primary">Districts &amp; schools</h2>
-          <p className="mt-1 font-sans text-[12px] text-text-tertiary">
-            Provision new districts, register CEEB codes, and import course catalogs (D2).
-          </p>
-          {isAdmin ? (
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link
-                href="/admin/districts/new"
-                className="inline-flex items-center rounded-md border border-[var(--olive-600)] bg-[var(--olive-700)] px-3.5 py-2 font-sans text-[12px] font-semibold text-white transition-colors hover:bg-[var(--olive-800)]"
-              >
-                Add district
-              </Link>
-            </div>
-          ) : (
-            <p className="mt-3 font-sans text-[12px] text-text-tertiary">
-              Admin role required to manage districts and schools.
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <h2
+              className="font-serif"
+              style={{ fontSize: 18, lineHeight: "24px", color: "var(--color-text)" }}
+            >
+              Districts &amp; schools
+            </h2>
+            <p
+              style={{
+                marginTop: 4,
+                fontSize: 12,
+                color: "var(--color-muted)",
+              }}
+            >
+              Provision new districts, register CEEB codes, and import course
+              catalogs (D2).
             </p>
-          )}
-        </Card>
+            {isAdmin ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  href="/admin/districts/new"
+                  className="inline-flex items-center rounded-md px-3.5 py-2 text-[12px] font-semibold text-white"
+                  style={{ background: "var(--color-green)" }}
+                >
+                  Add district
+                </Link>
+              </div>
+            ) : (
+              <p
+                style={{
+                  marginTop: 12,
+                  fontSize: 12,
+                  color: "var(--color-muted)",
+                }}
+              >
+                Admin role required to manage districts and schools.
+              </p>
+            )}
+          </Card>
 
-        <Card variant="default" padding="lg">
-          <h2 className="font-serif text-[18px] text-text-primary">Advisor account</h2>
-          <p className="mt-1 font-sans text-[12px] text-text-tertiary">
-            Currently signed in as
-          </p>
-          <p className="mt-2 font-mono text-[12px] text-text-primary">
-            {session?.email ?? session?.userId ?? "—"}
-          </p>
-          <p className="mt-1 font-sans text-[11px] text-text-tertiary">
-            Role: {session?.role ?? "anonymous"}
-          </p>
-          <p className="mt-3 font-sans text-[12px] text-text-tertiary">
-            Multi-advisor team support arrives in Sprint 6.
-          </p>
-        </Card>
+          <Card>
+            <h2
+              className="font-serif"
+              style={{ fontSize: 18, lineHeight: "24px", color: "var(--color-text)" }}
+            >
+              Advisor account
+            </h2>
+            <p
+              style={{
+                marginTop: 4,
+                fontSize: 12,
+                color: "var(--color-muted)",
+              }}
+            >
+              Currently signed in as
+            </p>
+            <p
+              style={{
+                marginTop: 8,
+                fontFamily: "var(--font-mono)",
+                fontSize: 12,
+                color: "var(--color-text)",
+              }}
+            >
+              {session?.email ?? session?.userId ?? "—"}
+            </p>
+            <p
+              style={{
+                marginTop: 4,
+                fontSize: 11,
+                color: "var(--color-muted)",
+              }}
+            >
+              Session role: {session?.role ?? "anonymous"}
+              {profile ? ` · Team role: ${profile.teamRole}` : ""}
+            </p>
+          </Card>
+        </div>
 
-        <Card variant="default" padding="lg" className="md:col-span-2">
-          <h2 className="font-serif text-[18px] text-text-primary">Data source class reference</h2>
-          <p className="mt-1 font-sans text-[12px] text-text-tertiary">
-            Operation TTG records the provenance of every grade and signal so you know
-            how much weight to give it.
+        <SettingsTeamSection
+          canManageTeam={canManageTeam}
+          team={team}
+          callerAdvisorId={session?.userId ?? null}
+        />
+
+        <Card>
+          <h2
+            className="font-serif"
+            style={{ fontSize: 18, lineHeight: "24px", color: "var(--color-text)" }}
+          >
+            Data source class reference
+          </h2>
+          <p
+            style={{
+              marginTop: 4,
+              fontSize: 12,
+              color: "var(--color-muted)",
+            }}
+          >
+            Operation TTG records the provenance of every grade and signal so you
+            know how much weight to give it.
           </p>
           <dl className="mt-4 grid gap-3 sm:grid-cols-2">
             <SourceClass
@@ -80,7 +177,7 @@ export default async function SettingsPage() {
             />
             <SourceClass
               label="Class B"
-              description="District-issued classification or course catalog reference (paste-and-parse)."
+              description="District-issued classification or course catalog reference (paste-and-parse) or OCR-extracted transcripts."
             />
             <SourceClass
               label="Class C"
@@ -93,15 +190,60 @@ export default async function SettingsPage() {
           </dl>
         </Card>
       </div>
-    </DashboardShell>
+    </QnShell>
   );
 }
 
-function SourceClass({ label, description }: { label: string; description: string }) {
+function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded bg-surface-inner p-3">
-      <dt className="font-mono text-[12px] font-semibold text-text-primary">{label}</dt>
-      <dd className="mt-1 font-sans text-[12px] text-text-secondary">{description}</dd>
+    <section
+      style={{
+        background: "var(--color-bg)",
+        border: "1px solid var(--color-border)",
+        borderRadius: 8,
+        padding: 20,
+        marginTop: 16,
+      }}
+    >
+      {children}
+    </section>
+  );
+}
+
+function SourceClass({
+  label,
+  description,
+}: {
+  label: string;
+  description: string;
+}) {
+  return (
+    <div
+      style={{
+        background: "var(--color-row-alt)",
+        borderRadius: 6,
+        padding: 12,
+      }}
+    >
+      <dt
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 12,
+          fontWeight: 600,
+          color: "var(--color-text)",
+        }}
+      >
+        {label}
+      </dt>
+      <dd
+        style={{
+          marginTop: 4,
+          fontSize: 12,
+          color: "var(--color-muted)",
+        }}
+      >
+        {description}
+      </dd>
     </div>
   );
 }
