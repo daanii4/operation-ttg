@@ -3,6 +3,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { handleApiError } from "@/lib/auth/api-permission-errors";
 import { requireTtgSession } from "@/lib/auth/session";
@@ -50,6 +51,16 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: err.message, code: err.code },
         { status: 400 }
+      );
+    }
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2003"
+    ) {
+      console.error("[students/POST] Foreign key violation:", err.meta);
+      return NextResponse.json(
+        { error: "Could not save student. Check school selection and try again.", code: "SERVER_ERROR" },
+        { status: 500 }
       );
     }
     return handleApiError(err);

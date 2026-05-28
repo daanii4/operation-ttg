@@ -36,6 +36,8 @@ export async function createStudentAthlete(
   }
 
   return prismaTtg.$transaction(async (tx) => {
+    // advisorId references legacy NextAuth `User` rows — Supabase sessions use
+    // AdvisorProfile + student_advisor_assignments instead (Sprint 6).
     const student = await tx.studentAthlete.create({
       data: {
         firstName: input.firstName,
@@ -45,7 +47,6 @@ export async function createStudentAthlete(
         enrollmentDateGrade9,
         highSchoolId: school.id,
         highSchoolName: school.schoolName,
-        advisorId: session.userId,
       },
     });
 

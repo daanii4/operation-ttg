@@ -24,6 +24,10 @@ const BAND_RANK: Record<Band, number> = {
 const COLUMN_TEMPLATE =
   "minmax(200px,1fr) 120px 80px 110px 160px minmax(240px,2fr) 32px";
 
+/** Sum of column minimums + gaps + horizontal padding — keeps row backgrounds full width when scrolling. */
+const TABLE_MIN_WIDTH =
+  200 + 120 + 80 + 110 + 160 + 240 + 32 + 16 * 6 + 20 * 2;
+
 /** AppHeader (96px) + gold rule (4px) */
 const STICKY_HEADER_TOP = 100;
 
@@ -65,117 +69,119 @@ export function RosterTable({ rows }: RosterTableProps) {
 
   return (
     <div role="table" aria-label="Student roster" className="min-w-0 overflow-x-auto">
-      <div role="rowgroup">
-        <div
-          role="row"
-          className="grid items-center border-b border-[var(--border-default)] bg-[var(--surface-inner)]"
-          style={{
-            gridTemplateColumns: COLUMN_TEMPLATE,
-            columnGap: 16,
-            padding: "12px 20px",
-            position: "sticky",
-            top: STICKY_HEADER_TOP,
-            zIndex: 5,
-          }}
-        >
-          <SortableHeader
-            label="Student"
-            active={sort?.key === "name"}
-            dir={sort?.key === "name" ? sort.dir : null}
-            onClick={() => onSortClick("name")}
-          />
-          <HeaderCell label="Sport" />
-          <SortableHeader
-            label="Grad"
-            active={sort?.key === "grad"}
-            dir={sort?.key === "grad" ? sort.dir : null}
-            onClick={() => onSortClick("grad")}
-          />
-          <SortableHeader
-            label="Band"
-            active={sort?.key === "band"}
-            dir={sort?.key === "band" ? sort.dir : null}
-            onClick={() => onSortClick("band")}
-          />
-          <SortableHeader
-            label="Action window"
-            active={sort?.key === "weeks"}
-            dir={sort?.key === "weeks" ? sort.dir : null}
-            onClick={() => onSortClick("weeks")}
-          />
-          <HeaderCell label="Primary concern" />
-          <span aria-hidden />
+      <div className="w-full" style={{ minWidth: TABLE_MIN_WIDTH }}>
+        <div role="rowgroup">
+          <div
+            role="row"
+            className="grid w-full items-center border-b border-[var(--border-default)] bg-[var(--surface-inner)]"
+            style={{
+              gridTemplateColumns: COLUMN_TEMPLATE,
+              columnGap: 16,
+              padding: "12px 20px",
+              position: "sticky",
+              top: STICKY_HEADER_TOP,
+              zIndex: 5,
+            }}
+          >
+            <SortableHeader
+              label="Student"
+              active={sort?.key === "name"}
+              dir={sort?.key === "name" ? sort.dir : null}
+              onClick={() => onSortClick("name")}
+            />
+            <HeaderCell label="Sport" />
+            <SortableHeader
+              label="Grad"
+              active={sort?.key === "grad"}
+              dir={sort?.key === "grad" ? sort.dir : null}
+              onClick={() => onSortClick("grad")}
+            />
+            <SortableHeader
+              label="Band"
+              active={sort?.key === "band"}
+              dir={sort?.key === "band" ? sort.dir : null}
+              onClick={() => onSortClick("band")}
+            />
+            <SortableHeader
+              label="Action window"
+              active={sort?.key === "weeks"}
+              dir={sort?.key === "weeks" ? sort.dir : null}
+              onClick={() => onSortClick("weeks")}
+            />
+            <HeaderCell label="Primary concern" />
+            <span aria-hidden />
+          </div>
         </div>
-      </div>
 
-      <div role="rowgroup">
-        {sorted.map((row, idx) => {
-          const isAlt = idx % 2 === 1;
-          return (
-            <div
-              key={row.studentId}
-              role="row"
-              tabIndex={0}
-              onClick={() => navigate(row.studentId)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  navigate(row.studentId);
-                }
-              }}
-              className="qn-roster-row grid cursor-pointer items-center transition-colors duration-[120ms] ease-out hover:bg-[var(--surface-inner)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--olive-600)]"
-              style={{
-                gridTemplateColumns: COLUMN_TEMPLATE,
-                columnGap: 16,
-                padding: "14px 20px",
-                minHeight: 56,
-                background: isAlt ? "var(--surface-inner)" : "var(--surface-card)",
-                borderBottom:
-                  idx === sorted.length - 1 ? "none" : "1px solid var(--border-default)",
-              }}
-            >
-              <div className="min-w-0">
-                <Link
-                  href={`/students/${row.studentId}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="qn-row-name truncate text-[13px] font-semibold leading-5 hover:underline"
+        <div role="rowgroup">
+          {sorted.map((row, idx) => {
+            const isAlt = idx % 2 === 1;
+            return (
+              <div
+                key={row.studentId}
+                role="row"
+                tabIndex={0}
+                onClick={() => navigate(row.studentId)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate(row.studentId);
+                  }
+                }}
+                className="qn-roster-row grid w-full cursor-pointer items-center transition-colors duration-[120ms] ease-out hover:bg-[var(--surface-inner)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--olive-600)]"
+                style={{
+                  gridTemplateColumns: COLUMN_TEMPLATE,
+                  columnGap: 16,
+                  padding: "14px 20px",
+                  minHeight: 56,
+                  background: isAlt ? "var(--surface-inner)" : "var(--surface-card)",
+                  borderBottom:
+                    idx === sorted.length - 1 ? "none" : "1px solid var(--border-default)",
+                }}
+              >
+                <div className="min-w-0">
+                  <Link
+                    href={`/students/${row.studentId}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="qn-row-name truncate text-[13px] font-semibold leading-5 hover:underline"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {row.fullName}
+                  </Link>
+                </div>
+                <span className="text-[13px] leading-5" style={{ color: "var(--text-primary)" }}>
+                  {row.sport}
+                </span>
+                <span
+                  className="font-mono text-[13px] leading-5"
                   style={{ color: "var(--text-primary)" }}
                 >
-                  {row.fullName}
-                </Link>
+                  {row.graduationYear}
+                </span>
+                <span>
+                  <BandBadge band={row.band} />
+                </span>
+                <span>
+                  {row.weeksToCriticalAction != null && row.weeksToCriticalAction <= 4 ? (
+                    <ActionWindowPill weeks={row.weeksToCriticalAction} />
+                  ) : (
+                    <span style={{ color: "var(--text-tertiary)" }}>—</span>
+                  )}
+                </span>
+                <span
+                  className="truncate text-[13px] leading-5"
+                  style={{ color: "var(--text-secondary)" }}
+                  title={row.primaryConcern ?? undefined}
+                >
+                  {row.primaryConcern ?? "—"}
+                </span>
+                <span className="flex justify-center" aria-hidden>
+                  <ChevronRight size={16} style={{ color: "var(--text-quaternary)" }} />
+                </span>
               </div>
-              <span className="text-[13px] leading-5" style={{ color: "var(--text-primary)" }}>
-                {row.sport}
-              </span>
-              <span
-                className="font-mono text-[13px] leading-5"
-                style={{ color: "var(--text-primary)" }}
-              >
-                {row.graduationYear}
-              </span>
-              <span>
-                <BandBadge band={row.band} />
-              </span>
-              <span>
-                {row.weeksToCriticalAction != null && row.weeksToCriticalAction <= 4 ? (
-                  <ActionWindowPill weeks={row.weeksToCriticalAction} />
-                ) : (
-                  <span style={{ color: "var(--text-tertiary)" }}>—</span>
-                )}
-              </span>
-              <span
-                className="truncate text-[13px] leading-5"
-                style={{ color: "var(--text-secondary)" }}
-                title={row.primaryConcern ?? undefined}
-              >
-                {row.primaryConcern ?? "—"}
-              </span>
-              <span className="flex justify-center" aria-hidden>
-                <ChevronRight size={16} style={{ color: "var(--text-quaternary)" }} />
-              </span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
