@@ -54,6 +54,19 @@ export interface StudentBriefingRecord {
   computedAt: string;
   /** F5 lock-in date — useful for PDF rendering. */
   lockInDate: Date | null;
+  /**
+   * Sprint 7 / Workstream ML — latest trajectory risk score (advisory only).
+   * Optional because computeMlScore() runs fire-and-forget and may not have
+   * landed a row yet for a brand-new student.
+   */
+  ml: {
+    score: number;
+    confidence_lower: number;
+    confidence_upper: number;
+    risk_tier: "low" | "moderate" | "high";
+    model_version: string;
+    computed_at: string;
+  } | null;
   /** Sprint 6 — observation slices used by the Trajectory tab charts. */
   observations: {
     grades: Array<{ observed_grade: string; observed_at: string }>;
@@ -228,6 +241,67 @@ export async function buildStudentBriefing(
     { yellowActionWeeks: thresholds.yellowActionWeeks }
   );
 
+  // Sprint 7 / Workstream ML — fire-and-forget the score so this builder
+  // doesn't add latency. We still attach the latest stored score to the
+  // record below for the UI.
+  try {
+    const { extractFeatureVector } = await import("@/lib/ml/extractFeatureVector");
+    const { computeMlScore } = await import("@/lib/ml/computeMlScore");
+    const featureVector = extractFeatureVector(
+      {
+        student_id: studentId,
+        name: fullName,
+        division_intent: [demo.student.targetDivision],
+        sport: names?.sport ?? "Unknown",
+        graduation_year: demo.student.enrollmentDateGrade9.getFullYear() + 3,
+        referenceDate,
+        lock_in_date: f5.lockInDate,
+      },
+      bundle.f1,
+      bundle.f3,
+      bundle.f4,
+      bundle.f6,
+      bundle.f7,
+      f8,
+      f9,
+      f10,
+      f11
+    );
+    void computeMlScore(studentId, featureVector, {
+      confidenceMargin: thresholds.mlConfidenceMargin,
+    }).catch((err) => {
+      console.error("[eligibility] ML score failed", err);
+    });
+  } catch (err) {
+    console.error("[eligibility] ML feature extraction failed", err);
+  }
+
+  const latestMlRow = await prismaTtg.mlTrajectoryScore
+    .findFirst({
+      where: { student_id: studentId },
+      orderBy: { computed_at: "desc" },
+      select: {
+        score: true,
+        confidence_lower: true,
+        confidence_upper: true,
+        risk_tier: true,
+        model_version: true,
+        computed_at: true,
+      },
+    })
+    .catch(() => null);
+
+  const ml = latestMlRow
+    ? {
+        score: latestMlRow.score,
+        confidence_lower: latestMlRow.confidence_lower,
+        confidence_upper: latestMlRow.confidence_upper,
+        risk_tier: latestMlRow.risk_tier as "low" | "moderate" | "high",
+        model_version: latestMlRow.model_version,
+        computed_at: latestMlRow.computed_at.toISOString(),
+      }
+    : null;
+
   return {
     found: true,
     record: {
@@ -249,6 +323,7 @@ export async function buildStudentBriefing(
       f12,
       computedAt: referenceDate.toISOString(),
       lockInDate: f5.lockInDate ?? null,
+      ml,
       observations: {
         grades: gradeUpdates.map((row) => ({
           observed_grade: row.observed_grade,

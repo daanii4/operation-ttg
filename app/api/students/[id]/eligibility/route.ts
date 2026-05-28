@@ -59,6 +59,7 @@ export async function GET(
       f10: record.f10,
       f11: record.f11,
       f12: record.f12,
+      ml: record.ml,
       computedAt: record.computedAt,
       observations: record.observations,
     });
