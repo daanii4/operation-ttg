@@ -122,6 +122,47 @@
   /* TTG AIMS / escalation accent — paired components reference these */
   --color-escalation: #991b1b;
   --color-escalation-fill: rgba(153, 27, 27, 0.08);
+
+  /* === QuasarNova v1 — Roster + Briefings spec (May 2026) ===========
+   * Single source of truth for the Roster and Briefings tabs. Do not reuse
+   * these tokens for decorative purposes; they are reserved for the
+   * GREEN / YELLOW / RED / ESCALATED semantic band system.
+   * Aliases are kept additive — older components continue to consume the
+   * Scholars-OS olive/gold tokens declared above.
+   */
+  --color-green:           #16A34A;
+  --color-yellow:          #D97706;
+  --color-red:             #DC2626;
+  --color-escalated:       #7C3AED;
+
+  --color-green-tint:      #F0FDF4;
+  --color-yellow-tint:     #FFFBEB;
+  --color-red-tint:        #FEF2F2;
+  --color-escalated-tint:  #F5F3FF;
+
+  --color-text:            #111827;
+  --color-text-strong:     #374151;
+  --color-muted:           #6B7280;
+  --color-muted-soft:      #9CA3AF;
+  --color-border:          #E5E7EB;
+  --color-border-hover:    #D1D5DB;
+  --color-row-alt:         #F9FAFB;
+  --color-bg:              #FFFFFF;
+  --color-bg-page:         #FFFFFF;
+
+  --color-focus:           #16A34A;
+  --color-focus-ring:      rgba(22, 163, 74, 0.15);
+
+  --shadow-sheet:          0 10px 40px -10px rgba(0, 0, 0, 0.10);
+
+  /* Spacing scale — base 4px (already implicit in Tailwind, surfaced for raw CSS). */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  12px;
+  --space-lg:  16px;
+  --space-xl:  24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
 }
 
 /* OS quarter-circle motif — sidebar logo tile (Scholars OS) */
@@ -274,3 +315,67 @@ p { margin: 0; }
   outline: 2px solid var(--gold-500);
   outline-offset: 2px;
 }
+
+
+/* ============================================================================
+ * QuasarNova v1 — Roster + Briefings utilities (May 2026)
+ * ============================================================================
+ */
+
+/* Skip-to-content link (visually hidden until focused).
+ * Required by the v1 accessibility checklist (§6.4). */
+.qn-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  background: var(--color-green);
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  transform: translateY(-200%);
+  transition: transform 120ms ease-out;
+}
+
+.qn-skip-link:focus,
+.qn-skip-link:focus-visible {
+  outline: none;
+  transform: translateY(0);
+}
+
+/* Skeleton shimmer used by <Skeleton>, <SkeletonRow>, <SkeletonCard> (§1.7). */
+@keyframes qn-shimmer {
+  0%   { background-position: -480px 0; }
+  100% { background-position: 480px 0; }
+}
+
+.qn-skeleton {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    #F3F4F6 0%,
+    #E5E7EB 50%,
+    #F3F4F6 100%
+  );
+  background-size: 480px 100%;
+  animation: qn-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Escalated badge ping ring (§1.1) — looped 1.5s, opacity 0→0.4, scale 1→1.4.
+ * Tailwind’s built-in animate-ping uses 75% scale. The Escalated band requires
+ * the spec’s exact curve, so we declare a dedicated keyframe set. */
+@keyframes qn-escalated-ping {
+  0%   { transform: scale(1);   opacity: 0.4; }
+  80%, 100% { transform: scale(1.4); opacity: 0; }
+}
+
+.qn-escalated-ping {
+  animation: qn-escalated-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Hide native scrollbar in horizontal active-filters strip on mobile (§3.3). */
+.qn-no-scrollbar { scrollbar-width: none; }
+.qn-no-scrollbar::-webkit-scrollbar { display: none; }
