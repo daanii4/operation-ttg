@@ -56,7 +56,7 @@ export const ROADMAP_CAPABILITIES: RoadmapCapability[] = [
       // Roster pages; the Overview page still owns the holistic KPIs and the
       // band distribution chart, while the roster table moved to its own tab.
       implementation: ["app/dashboard/page.tsx", "app/api/cohort/route.ts"],
-      wiring: ["app/dashboard/OverviewClient.tsx", "app/dashboard/roster/RosterClient.tsx"],
+      wiring: ["app/dashboard/OverviewClient.tsx", "app/dashboard/roster/RosterPageClient.tsx"],
     },
     agentQuestions: [],
   },

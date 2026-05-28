@@ -1,43 +1,27 @@
 import type { Metadata } from "next";
 import { buildCohortResponse } from "@/lib/cohort/build-cohort-response";
-import DashboardShell from "@/components/layout/DashboardShell";
-import TtgHeaderActions from "@/components/layout/TtgHeaderActions";
-import Breadcrumb from "@/components/layout/Breadcrumb";
-import BriefingsClient from "./BriefingsClient";
+import { sortQnRosterRows, toQnRosterRows } from "@/lib/cohort/qn-roster";
+import { getAdvisorDisplay } from "@/lib/auth/advisor-identity";
+import QnShell from "@/components/layout/qn/QnShell";
+import BriefingsPageClient from "./BriefingsPageClient";
 
 export const metadata: Metadata = {
   title: "Briefings · Operation TTG",
 };
 
 export default async function BriefingsPage() {
-  const data = await buildCohortResponse();
+  const [data, advisor] = await Promise.all([
+    buildCohortResponse(),
+    getAdvisorDisplay(),
+  ]);
+
+  // Briefings list ordering follows the spec §4.2: ESCALATED first, then RED,
+  // YELLOW, GREEN; within each band by weeks_to_critical_action ascending.
+  const rows = sortQnRosterRows(toQnRosterRows(data.students));
 
   return (
-    <DashboardShell
-      eyebrow="BRIEFINGS"
-      pageTitle="Master Briefings"
-      pageSubtitle="F12 master briefing per student · intervention codes · action windows · PDF export"
-      headerActions={<TtgHeaderActions />}
-    >
-      <Breadcrumb
-        items={[
-          { label: "Operation TTG", href: "/" },
-          { label: "Manteca USD", href: "/dashboard" },
-          { label: "Briefings" },
-        ]}
-      />
-      <BriefingsClient
-        students={data.students.map((s) => ({
-          studentId: s.studentId,
-          firstName: s.firstName,
-          lastName: s.lastName,
-          grade: s.grade,
-          sport: s.sport,
-          targetDivision: s.targetDivision,
-          riskBand: s.riskBand,
-          overallRisk: s.overallRisk,
-        }))}
-      />
-    </DashboardShell>
+    <QnShell pageTitle="Briefings" advisor={advisor}>
+      <BriefingsPageClient rows={rows} />
+    </QnShell>
   );
 }
