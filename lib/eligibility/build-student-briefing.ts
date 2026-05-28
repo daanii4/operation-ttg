@@ -10,7 +10,7 @@
  * the advisor sees on screen is byte-for-byte the briefing exported to PDF.
  */
 
-import { ALL_DEMO_STUDENTS, DEMO_TODAY, STUDENT_NAMES } from "@/lib/seed/demo-data";
+import { ALL_DEMO_STUDENTS, DEMO_TODAY, MUSD_CALENDAR, STUDENT_NAMES } from "@/lib/seed/demo-data";
 import {
   f5CoursesToClassified,
   f5StudentToStudentInput,
@@ -18,7 +18,12 @@ import {
 import { computeEligibilityBundle } from "@/lib/eligibility/compute-eligibility";
 import type { EligibilityBundle } from "@/lib/eligibility/compute-eligibility";
 import { calcEligibilitySummary } from "@/lib/calculations/f8";
-import { calcNcaa107Status } from "@/lib/calculations/f5";
+import {
+  calcNcaa107Status,
+  type F5CourseRecord,
+  type F5SchoolCalendar,
+  type F5StudentInput,
+} from "@/lib/calculations/f5";
 import { calcGpaTrajectory } from "@/lib/calculations/f9";
 import { calcAimsRiskSignal } from "@/lib/calculations/f10";
 import { calcEngagementMetrics } from "@/lib/calculations/f11";
@@ -31,6 +36,7 @@ import type {
   F12Result,
 } from "@/lib/calculations/types";
 import { prismaTtg } from "@/lib/prisma";
+import type { CourseRecord, HighSchool, StudentAthlete } from "@prisma/client";
 
 export interface StudentBriefingHeader {
   studentId: string;
@@ -120,21 +126,110 @@ function resolveThresholds(input?: BriefingThresholds): Required<BriefingThresho
   };
 }
 
+type BriefingSource = {
+  student: F5StudentInput;
+  courses: F5CourseRecord[];
+  calendar: F5SchoolCalendar | null;
+  calendarYear: string;
+  names: { firstName: string; lastName: string; sport: string };
+};
+
+function mapCourseRecordToF5(course: CourseRecord): F5CourseRecord {
+  return {
+    id: course.id,
+    courseName: course.courseName,
+    gradeLetterNormalized: course.gradeLetterNormalized,
+    termEndDate: course.termEndDate,
+    ncaaD1Category: course.ncaaD1Category,
+    ncaaApproved: course.ncaaApproved,
+    agCategory: course.agCategory,
+    classificationUpdatedAt: course.classificationUpdatedAt,
+  };
+}
+
+function mapHighSchoolToCalendar(highSchool: HighSchool | null): F5SchoolCalendar | null {
+  if (!highSchool?.seniorFallTermStart) {
+    return null;
+  }
+
+  return {
+    seniorFallTermStart: highSchool.seniorFallTermStart,
+    summerTermEndDate: highSchool.summerTermEnd ?? undefined,
+    maxCoresPerTerm: highSchool.maxCoresPerTerm,
+    maxEmsPerTerm: highSchool.maxEmsPerTerm,
+    calendarSourceUrl: highSchool.calendarSourceUrl,
+  };
+}
+
+async function resolveBriefingSource(studentId: string): Promise<BriefingSource | null> {
+  const demo = ALL_DEMO_STUDENTS.find((d) => d.student.id === studentId);
+  if (demo) {
+    const names = STUDENT_NAMES[studentId];
+    return {
+      student: demo.student,
+      courses: demo.courses,
+      calendar: demo.calendar,
+      calendarYear: demo.calendarYear,
+      names: {
+        firstName: names?.firstName ?? "Student",
+        lastName: names?.lastName ?? "",
+        sport: names?.sport ?? "Unknown",
+      },
+    };
+  }
+
+  type DbStudent = StudentAthlete & {
+    courses: CourseRecord[];
+    highSchool: HighSchool | null;
+  };
+
+  const dbStudent = await prismaTtg.studentAthlete
+    .findUnique({
+      where: { id: studentId },
+      include: { courses: true, highSchool: true },
+    })
+    .catch(() => null);
+
+  if (!dbStudent) return null;
+
+  const student = dbStudent as DbStudent;
+  const seedName = STUDENT_NAMES[studentId];
+
+  return {
+    student: {
+      id: student.id,
+      targetDivision: student.targetDivision,
+      enrollmentDateGrade9: student.enrollmentDateGrade9,
+      highSchoolId: student.highSchoolId,
+      highSchoolName: student.highSchoolName ?? student.highSchool?.schoolName ?? "Unknown High School",
+      grade: student.grade,
+    },
+    courses: student.courses.map(mapCourseRecordToF5),
+    calendar: mapHighSchoolToCalendar(student.highSchool) ?? MUSD_CALENDAR,
+    calendarYear: "2026",
+    names: {
+      firstName: student.firstName,
+      lastName: student.lastName,
+      sport: seedName?.sport ?? "Unknown",
+    },
+  };
+}
+
 export async function buildStudentBriefing(
   studentId: string,
   thresholdInput?: BriefingThresholds
 ): Promise<StudentBriefingResult> {
   const thresholds = resolveThresholds(thresholdInput);
-  const demo = ALL_DEMO_STUDENTS.find((d) => d.student.id === studentId);
-  if (!demo) return { found: false };
+  const source = await resolveBriefingSource(studentId);
+  if (!source) return { found: false };
 
-  const names = STUDENT_NAMES[studentId];
-  const fullName = `${names?.firstName ?? "Student"} ${names?.lastName ?? ""}`.trim();
-  const studentInput = f5StudentToStudentInput(demo.student);
-  const courses = f5CoursesToClassified(demo.courses, `${demo.calendarYear}-26`);
-  const bundle = computeEligibilityBundle(studentInput, courses);
+  const { student, courses, calendar, calendarYear, names } = source;
+  const fullName = `${names.firstName} ${names.lastName}`.trim();
+  const studentInput = f5StudentToStudentInput(student);
+  const classifiedCourses = f5CoursesToClassified(courses, `${calendarYear}-26`);
+  const bundle = computeEligibilityBundle(studentInput, classifiedCourses);
 
-  const f5 = calcNcaa107Status(demo.student, demo.courses, demo.calendar, DEMO_TODAY);
+  const f5 = calcNcaa107Status(student, courses, calendar, DEMO_TODAY);
   const f8 = await calcEligibilitySummary(
     studentId,
     {
@@ -222,9 +317,9 @@ export async function buildStudentBriefing(
     {
       student_id: studentId,
       name: fullName,
-      division_intent: [demo.student.targetDivision],
-      sport: names?.sport ?? "Unknown",
-      graduation_year: demo.student.enrollmentDateGrade9.getFullYear() + 3,
+      division_intent: [student.targetDivision],
+      sport: names.sport,
+      graduation_year: student.enrollmentDateGrade9.getFullYear() + 3,
       referenceDate,
       lock_in_date: f5.lockInDate,
     },
@@ -251,9 +346,9 @@ export async function buildStudentBriefing(
       {
         student_id: studentId,
         name: fullName,
-        division_intent: [demo.student.targetDivision],
-        sport: names?.sport ?? "Unknown",
-        graduation_year: demo.student.enrollmentDateGrade9.getFullYear() + 3,
+        division_intent: [student.targetDivision],
+        sport: names.sport,
+        graduation_year: student.enrollmentDateGrade9.getFullYear() + 3,
         referenceDate,
         lock_in_date: f5.lockInDate,
       },
@@ -307,13 +402,13 @@ export async function buildStudentBriefing(
     record: {
       header: {
         studentId,
-        firstName: names?.firstName ?? "Student",
-        lastName: names?.lastName ?? "",
+        firstName: names.firstName,
+        lastName: names.lastName,
         fullName,
-        sport: names?.sport ?? "Unknown",
-        targetDivision: demo.student.targetDivision,
-        graduationYear: demo.student.enrollmentDateGrade9.getFullYear() + 3,
-        highSchoolName: demo.student.highSchoolName,
+        sport: names.sport,
+        targetDivision: student.targetDivision,
+        graduationYear: student.enrollmentDateGrade9.getFullYear() + 3,
+        highSchoolName: student.highSchoolName,
       },
       bundle,
       f8,

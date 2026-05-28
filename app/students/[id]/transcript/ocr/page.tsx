@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { getTtgSession } from "@/lib/auth/session";
-import { getAdvisorDisplay } from "@/lib/auth/advisor-identity";
 import { prismaTtg } from "@/lib/prisma";
 import { computeAllDemoResults } from "@/lib/seed/demo-data";
-import QnShell from "@/components/layout/qn/QnShell";
+import DashboardShell from "@/components/layout/DashboardShell";
+import Breadcrumb from "@/components/layout/Breadcrumb";
 import OcrUploadClient from "./OcrUploadClient";
 
 export default async function OcrTranscriptPage({
@@ -34,27 +34,31 @@ export default async function OcrTranscriptPage({
   const lastName = dbStudent?.lastName ?? demoStudent?.lastName ?? "";
   const fullName = `${firstName} ${lastName}`.trim();
 
-  const advisor = await getAdvisorDisplay();
-
   return (
-    <QnShell
-      pageTitle="Upload transcript"
+    <DashboardShell
       eyebrow={fullName.toUpperCase()}
-      advisor={advisor}
+      pageTitle="Upload transcript"
+      pageSubtitle="OCR review · Class B data source"
     >
+      <Breadcrumb
+        items={[
+          { label: "Operation TTG", href: "/" },
+          { label: "Manteca USD", href: "/dashboard" },
+          { label: fullName, href: `/students/${params.id}` },
+          { label: "OCR upload" },
+        ]}
+      />
       <div
         style={{
           maxWidth: 880,
           marginLeft: "auto",
           marginRight: "auto",
-          paddingLeft: 32,
-          paddingRight: 32,
-          paddingTop: 24,
+          paddingTop: 8,
           paddingBottom: 28,
         }}
       >
         <OcrUploadClient studentId={params.id} studentName={fullName} />
       </div>
-    </QnShell>
+    </DashboardShell>
   );
 }

@@ -1,19 +1,10 @@
 "use client";
 
-/**
- * Sprint 6 / A4-3 — Trajectory page client.
- *
- * Mirrors the Briefings split-pane: shared 320px student selector on
- * desktop, prev/next + picker sheet on mobile. Right pane stacks three
- * cards (GPA Trajectory · AIMS Signal · Engagement) wired to the F9/F10/F11
- * slices of the eligibility API.
- */
-
 import * as React from "react";
 import { AlertCircle, Loader2, RefreshCcw } from "lucide-react";
 import type { QnRosterRow } from "@/lib/cohort/qn-roster";
 import { Button } from "@/components/ui/qn";
-import StudentSelectorPanel from "@/components/dashboard/StudentSelectorPanel";
+import StudentWorkspaceLayout from "@/components/dashboard/StudentWorkspaceLayout";
 import MobileStudentSelector from "@/components/dashboard/MobileStudentSelector";
 import MobileStudentPickerSheet from "@/components/dashboard/MobileStudentPickerSheet";
 import { useBriefingData } from "@/app/dashboard/briefings/_components/use-briefing-data";
@@ -39,28 +30,15 @@ export default function TrajectoryPageClient({ rows }: TrajectoryPageClientProps
 
   return (
     <>
-      {/* ============================ Desktop ============================ */}
-      <div className="hidden md:flex md:items-stretch">
-        <StudentSelectorPanel
-          rows={rows}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          title="Trajectory"
-        />
-        <div
-          className="flex-1"
-          style={{
-            paddingLeft: 24,
-            paddingRight: 32,
-            paddingTop: 24,
-            paddingBottom: 28,
-          }}
-        >
-          <TrajectoryBody selected={selected} briefing={briefing} />
-        </div>
-      </div>
+      <StudentWorkspaceLayout
+        rows={rows}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        listTitle="Trajectory"
+      >
+        <TrajectoryBody selected={selected} briefing={briefing} embedded />
+      </StudentWorkspaceLayout>
 
-      {/* ============================ Mobile ============================= */}
       <div className="md:hidden">
         <MobileStudentSelector
           selected={selected}
@@ -75,7 +53,7 @@ export default function TrajectoryPageClient({ rows }: TrajectoryPageClientProps
           selectedId={selectedId}
           onSelect={setSelectedId}
         />
-        <div style={{ padding: 16 }}>
+        <div className="px-4 pb-6 pt-4">
           <TrajectoryBody selected={selected} briefing={briefing} />
         </div>
       </div>
@@ -86,63 +64,73 @@ export default function TrajectoryPageClient({ rows }: TrajectoryPageClientProps
 function TrajectoryBody({
   selected,
   briefing,
+  embedded = false,
 }: {
   selected: QnRosterRow | null;
   briefing: ReturnType<typeof useBriefingData>;
+  embedded?: boolean;
 }) {
-  if (!selected) return <NoSelection />;
-  if (briefing.status === "loading") return <LoadingTrajectory />;
+  const sectionVariant = embedded ? ("embedded" as const) : ("card" as const);
+
+  if (!selected) return <NoSelection embedded={embedded} />;
+  if (briefing.status === "loading") return <LoadingTrajectory embedded={embedded} />;
   if (briefing.status === "error") {
-    return <ErrorTrajectory onRetry={briefing.refetch} message={briefing.error} />;
+    return <ErrorTrajectory onRetry={briefing.refetch} message={briefing.error} embedded={embedded} />;
   }
   if (briefing.status === "empty" || !briefing.data) {
-    return <NoData />;
+    return <NoData embedded={embedded} />;
   }
-  return (
-    <div className="flex flex-col gap-4">
+
+  const sections = (
+    <>
       <GpaTrajectoryCard
+        variant={sectionVariant}
         f9={briefing.data.f9}
         observations={briefing.data.observations?.grades ?? null}
       />
-      <AimsSignalCard f10={briefing.data.f10} />
-      <EngagementCard f11={briefing.data.f11} />
-      <RiskForecastCard ml={briefing.data.ml} />
-    </div>
+      <AimsSignalCard variant={sectionVariant} f10={briefing.data.f10} />
+      <EngagementCard variant={sectionVariant} f11={briefing.data.f11} />
+      <RiskForecastCard variant={sectionVariant} ml={briefing.data.ml} />
+    </>
   );
+
+  if (embedded) {
+    return <div className="[&>section:last-child]:border-b-0">{sections}</div>;
+  }
+
+  return <div className="flex flex-col gap-4">{sections}</div>;
 }
 
-function NoSelection() {
+function NoSelection({ embedded = false }: { embedded?: boolean }) {
   return (
     <div
       role="status"
-      style={{
-        textAlign: "center",
-        padding: 48,
-        color: "var(--color-muted)",
-      }}
+      className={`text-center text-[var(--text-tertiary)] ${embedded ? "px-6 py-12" : "py-12"}`}
     >
-      <p
-        className="text-base font-semibold"
-        style={{ color: "var(--color-text)" }}
-      >
+      <p className="font-sans text-base font-semibold text-[var(--text-primary)]">
         Select a student
       </p>
-      <p style={{ marginTop: 4, fontSize: 13 }}>
+      <p className="mt-1 font-sans text-[13px]">
         Choose a student from the list to view their trajectory and signals.
       </p>
     </div>
   );
 }
 
-function LoadingTrajectory() {
+function LoadingTrajectory({ embedded = false }: { embedded?: boolean }) {
   return (
-    <div className="flex flex-col gap-4">
-      {[0, 1, 2].map((i) => (
+    <div className={embedded ? "space-y-0 px-6 py-6" : "flex flex-col gap-4"}>
+      {[0, 1, 2, 3].map((i) => (
         <div
           key={i}
           aria-hidden
-          className="qn-skeleton"
-          style={{ width: "100%", height: 240, borderRadius: 8 }}
+          className="animate-pulse bg-[var(--surface-inner)]"
+          style={{
+            width: "100%",
+            height: embedded ? 180 : 240,
+            borderBottom: embedded ? "1px solid var(--border-default)" : undefined,
+            borderRadius: embedded ? 0 : "var(--radius-default)",
+          }}
         />
       ))}
     </div>
@@ -152,13 +140,16 @@ function LoadingTrajectory() {
 function ErrorTrajectory({
   onRetry,
   message,
+  embedded = false,
 }: {
   onRetry: () => void;
   message: string | null;
+  embedded?: boolean;
 }) {
   return (
     <div
       role="alert"
+      className={embedded ? "mx-6 my-6" : undefined}
       style={{
         padding: "16px 20px",
         background: "var(--color-red-tint)",
@@ -167,28 +158,15 @@ function ErrorTrajectory({
       }}
     >
       <div className="flex items-start gap-2">
-        <AlertCircle
-          size={20}
-          aria-hidden
-          style={{ color: "var(--color-red)" }}
-        />
+        <AlertCircle size={20} aria-hidden className="text-[var(--color-red)]" />
         <div>
-          <p
-            className="text-base font-semibold"
-            style={{ color: "var(--color-text)" }}
-          >
+          <p className="font-sans text-base font-semibold text-[var(--text-primary)]">
             Couldn't load trajectory
           </p>
-          <p
-            style={{
-              fontSize: 12,
-              color: "var(--color-red)",
-              marginTop: 2,
-            }}
-          >
+          <p className="mt-0.5 font-sans text-[12px] text-[var(--color-red)]">
             {message ?? "Check your connection and try again."}
           </p>
-          <div style={{ marginTop: 12 }}>
+          <div className="mt-3">
             <Button variant="outline" icon={RefreshCcw} onClick={onRetry}>
               Retry
             </Button>
@@ -199,26 +177,21 @@ function ErrorTrajectory({
   );
 }
 
-function NoData() {
+function NoData({ embedded = false }: { embedded?: boolean }) {
   return (
     <div
       role="status"
-      style={{
-        textAlign: "center",
-        padding: 48,
-        color: "var(--color-muted)",
-      }}
+      className={`text-center text-[var(--text-tertiary)] ${embedded ? "px-6 py-12" : "py-12"}`}
     >
       <Loader2
         size={20}
         aria-hidden
-        className="animate-spin"
-        style={{ color: "var(--color-muted)", marginInline: "auto" }}
+        className="mx-auto animate-spin text-[var(--text-tertiary)]"
       />
-      <p className="mt-3 text-base font-semibold" style={{ color: "var(--color-text)" }}>
+      <p className="mt-3 font-sans text-base font-semibold text-[var(--text-primary)]">
         No trajectory data yet
       </p>
-      <p style={{ marginTop: 4, fontSize: 13 }}>
+      <p className="mt-1 font-sans text-[13px]">
         Trajectory and AIMS data are populated as new observations land.
       </p>
     </div>

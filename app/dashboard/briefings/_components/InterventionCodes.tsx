@@ -40,12 +40,12 @@ export function InterventionCodes({ f12, sectionBorder }: InterventionCodesProps
     <section
       style={{
         padding: "20px 28px",
-        borderBottom: sectionBorder ? "1px solid var(--color-border)" : undefined,
+        borderBottom: sectionBorder ? "1px solid var(--border-default)" : undefined,
       }}
     >
       <p
         className="text-[11px] font-semibold uppercase"
-        style={{ color: "var(--color-muted)", letterSpacing: "0.06em" }}
+        style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}
       >
         Intervention codes
       </p>
@@ -54,12 +54,12 @@ export function InterventionCodes({ f12, sectionBorder }: InterventionCodesProps
         <p
           className="mt-3 italic"
           style={{
-            background: "var(--color-row-alt)",
+            background: "var(--surface-inner)",
             padding: "10px 12px",
             borderRadius: 6,
             fontSize: 13,
             lineHeight: "20px",
-            color: "var(--color-muted)",
+            color: "var(--text-tertiary)",
           }}
         >
           No intervention codes flagged.
@@ -74,7 +74,7 @@ export function InterventionCodes({ f12, sectionBorder }: InterventionCodesProps
                 key={row.code}
                 className="flex items-start gap-3"
                 style={{
-                  background: "var(--color-row-alt)",
+                  background: "var(--surface-inner)",
                   padding: "10px 12px",
                   borderRadius: 6,
                 }}
@@ -94,17 +94,17 @@ export function InterventionCodes({ f12, sectionBorder }: InterventionCodesProps
                       style={{
                         fontSize: 13,
                         lineHeight: "20px",
-                        color: "var(--color-text)",
+                        color: "var(--text-primary)",
                       }}
                     >
                       <span style={{ fontWeight: 500 }}>{row.label}</span>
                       <span
                         aria-hidden
-                        style={{ color: "var(--color-muted)", margin: "0 6px" }}
+                        style={{ color: "var(--text-tertiary)", margin: "0 6px" }}
                       >
                         ·
                       </span>
-                      <span style={{ color: "var(--color-muted)" }}>{description}</span>
+                      <span style={{ color: "var(--text-tertiary)" }}>{description}</span>
                     </p>
                   ) : (
                     <>
@@ -112,7 +112,7 @@ export function InterventionCodes({ f12, sectionBorder }: InterventionCodesProps
                         style={{
                           fontSize: 13,
                           lineHeight: "20px",
-                          color: "var(--color-text)",
+                          color: "var(--text-primary)",
                           fontWeight: 500,
                         }}
                       >
@@ -122,7 +122,7 @@ export function InterventionCodes({ f12, sectionBorder }: InterventionCodesProps
                         style={{
                           fontSize: 12,
                           lineHeight: "16px",
-                          color: "var(--color-muted)",
+                          color: "var(--text-tertiary)",
                           marginTop: 2,
                         }}
                       >

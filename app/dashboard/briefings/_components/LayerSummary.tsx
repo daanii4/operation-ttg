@@ -150,7 +150,7 @@ export function LayerSummary({ payload }: LayerSummaryProps) {
     <section style={{ padding: "20px 28px" }}>
       <p
         className="text-[11px] font-semibold uppercase"
-        style={{ color: "var(--color-muted)", letterSpacing: "0.06em" }}
+        style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}
       >
         Layer summary
       </p>
@@ -171,13 +171,13 @@ export function LayerSummary({ payload }: LayerSummaryProps) {
           {rows.map((row) => (
             <tr
               key={row.layer}
-              style={{ borderBottom: "1px solid var(--color-border)", height: 40 }}
+              style={{ borderBottom: "1px solid var(--border-default)", height: 40 }}
             >
               <td
                 style={{
                   fontSize: 13,
                   lineHeight: "20px",
-                  color: "var(--color-text)",
+                  color: "var(--text-primary)",
                   paddingRight: 12,
                 }}
               >
@@ -189,7 +189,7 @@ export function LayerSummary({ payload }: LayerSummaryProps) {
                 ) : (
                   <span
                     title="Insufficient evidence"
-                    style={{ color: "var(--color-muted)" }}
+                    style={{ color: "var(--text-tertiary)" }}
                   >
                     —
                   </span>
@@ -200,7 +200,7 @@ export function LayerSummary({ payload }: LayerSummaryProps) {
                 style={{
                   fontSize: 13,
                   lineHeight: "20px",
-                  color: row.insufficient ? "var(--color-muted)" : "var(--color-text)",
+                  color: row.insufficient ? "var(--text-tertiary)" : "var(--text-primary)",
                 }}
                 title={row.insufficient ? "Insufficient evidence" : undefined}
               >
@@ -210,7 +210,7 @@ export function LayerSummary({ payload }: LayerSummaryProps) {
                 style={{
                   fontSize: 13,
                   lineHeight: "20px",
-                  color: "var(--color-muted)",
+                  color: "var(--text-tertiary)",
                   paddingRight: 0,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -239,8 +239,8 @@ function Th({ children, width }: { children: React.ReactNode; width: string }) {
         fontWeight: 600,
         textTransform: "uppercase",
         letterSpacing: "0.06em",
-        color: "var(--color-muted)",
-        borderBottom: "1px solid var(--color-border)",
+        color: "var(--text-tertiary)",
+        borderBottom: "1px solid var(--border-default)",
         padding: "8px 12px 8px 0",
         width,
       }}

@@ -11,7 +11,7 @@ import * as React from "react";
 import { AlertCircle, AlertTriangle, Inbox, Loader2 } from "lucide-react";
 import type { QnRosterRow } from "@/lib/cohort/qn-roster";
 import { Button, EvidenceTierChip, SkeletonCard } from "@/components/ui/qn";
-import BriefingStudentList from "./_components/BriefingStudentList";
+import StudentWorkspaceLayout from "@/components/dashboard/StudentWorkspaceLayout";
 import BriefingCard from "./_components/BriefingCard";
 import MobileStudentSelector from "./_components/MobileStudentSelector";
 import MobileStudentPickerSheet from "./_components/MobileStudentPickerSheet";
@@ -46,19 +46,15 @@ export default function BriefingsPageClient({ rows }: BriefingsPageClientProps) 
   return (
     <>
       {/* ============================ Desktop ============================ */}
-      <div className="hidden md:flex md:items-stretch">
-        <BriefingStudentList
-          rows={rows}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-        />
-        <div
-          className="flex-1"
-          style={{ paddingLeft: 24, paddingRight: 32, paddingTop: 24, paddingBottom: 28 }}
-        >
-          <BriefingCard selected={selected} briefing={briefing} />
-        </div>
-      </div>
+      <StudentWorkspaceLayout
+        rows={rows}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        listTitle="Briefings"
+        listAriaLabel="Students with briefings"
+      >
+        <BriefingCard selected={selected} briefing={briefing} embedded />
+      </StudentWorkspaceLayout>
 
       {/* ============================ Mobile ============================= */}
       <div className="md:hidden">
@@ -99,8 +95,8 @@ function MobileBriefing({
         className="flex flex-col items-center justify-center text-center"
         style={{ padding: 48 }}
       >
-        <Inbox size={40} aria-hidden style={{ color: "#9CA3AF" }} />
-        <p className="text-base font-semibold" style={{ marginTop: 16, color: "var(--color-text)" }}>
+        <Inbox size={40} aria-hidden style={{ color: "var(--text-quaternary)" }} />
+        <p className="text-base font-semibold" style={{ marginTop: 16, color: "var(--text-primary)" }}>
           Select a student
         </p>
         <p
@@ -108,7 +104,7 @@ function MobileBriefing({
             fontSize: 13,
             lineHeight: "20px",
             marginTop: 4,
-            color: "var(--color-muted)",
+            color: "var(--text-tertiary)",
             maxWidth: 320,
           }}
         >
@@ -137,8 +133,8 @@ function MobileBriefing({
         className="flex flex-col items-center justify-center text-center"
         style={{ padding: 48 }}
       >
-        <Inbox size={40} aria-hidden style={{ color: "#9CA3AF" }} />
-        <p className="text-base font-semibold" style={{ marginTop: 16, color: "var(--color-text)" }}>
+        <Inbox size={40} aria-hidden style={{ color: "var(--text-quaternary)" }} />
+        <p className="text-base font-semibold" style={{ marginTop: 16, color: "var(--text-primary)" }}>
           No briefing available yet
         </p>
         <p
@@ -146,7 +142,7 @@ function MobileBriefing({
             fontSize: 13,
             lineHeight: "20px",
             marginTop: 4,
-            color: "var(--color-muted)",
+            color: "var(--text-tertiary)",
             maxWidth: 320,
           }}
         >
@@ -219,12 +215,12 @@ function MobileBriefing({
           className="flex items-center justify-between"
           style={{
             padding: "12px 16px",
-            borderTop: "1px solid var(--color-border)",
-            background: "var(--color-row-alt)",
+            borderTop: "1px solid var(--border-default)",
+            background: "var(--surface-inner)",
           }}
         >
           <EvidenceTierChip tier={worst} />
-          <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
+          <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
             {briefing.computedAt
               ? briefing.computedAt.toLocaleString(undefined, {
                   hour: "numeric",
@@ -235,21 +231,21 @@ function MobileBriefing({
         </div>
       </div>
 
-      {/* Sticky bottom export action — sits above the bottom tab bar (56px). */}
+      {/* Sticky bottom export action (mobile). */}
       <div
         style={{
           position: "fixed",
-          bottom: 56,
+          bottom: 0,
           left: 0,
           right: 0,
-          padding: "12px 16px",
-          background: "var(--color-bg)",
-          borderTop: "1px solid var(--color-border)",
+          padding: "12px 16px calc(12px + env(safe-area-inset-bottom))",
+          background: "var(--surface-card)",
+          borderTop: "1px solid var(--border-default)",
           zIndex: 25,
         }}
       >
         <ExportPDFButton
-          variant="primary"
+          variant="gold"
           fullWidth
           studentId={selected.studentId}
           studentName={selected.fullName}
@@ -274,7 +270,7 @@ function MobileError({ onRetry, message }: { onRetry: () => void; message: strin
     >
       <div className="flex items-start gap-2">
         <AlertCircle size={16} aria-hidden style={{ color: "var(--color-red)" }} />
-        <p style={{ fontSize: 13, color: "var(--color-text)", fontWeight: 600 }}>
+        <p style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 600 }}>
           Couldn't load briefing
         </p>
       </div>

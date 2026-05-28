@@ -1,12 +1,7 @@
 "use client";
 
 /**
- * QuasarNova v1 — §2.3 Roster table (desktop).
- *
- * Bordered card, sticky header row, alternating-row striping, hover highlight,
- * and full-row click navigation. The whole row is the link surface but the
- * Student name is the visible affordance; only the chevron is a separate
- * focusable target so keyboard users still get a single focus stop per row.
+ * Roster table (desktop) — rows inside the page Card shell.
  */
 
 import * as React from "react";
@@ -28,6 +23,9 @@ const BAND_RANK: Record<Band, number> = {
 
 const COLUMN_TEMPLATE =
   "minmax(200px,1fr) 120px 80px 110px 160px minmax(240px,2fr) 32px";
+
+/** AppHeader (96px) + gold rule (4px) */
+const STICKY_HEADER_TOP = 100;
 
 export interface RosterTableProps {
   rows: QnRosterRow[];
@@ -66,24 +64,17 @@ export function RosterTable({ rows }: RosterTableProps) {
   const navigate = (id: string) => router.push(`/students/${id}`);
 
   return (
-    <div
-      className="overflow-hidden rounded-lg bg-white"
-      style={{ border: "1px solid var(--color-border)" }}
-      role="table"
-      aria-label="Student roster"
-    >
+    <div role="table" aria-label="Student roster" className="min-w-0 overflow-x-auto">
       <div role="rowgroup">
         <div
           role="row"
-          className="grid items-center"
+          className="grid items-center border-b border-[var(--border-default)] bg-[var(--surface-inner)]"
           style={{
             gridTemplateColumns: COLUMN_TEMPLATE,
             columnGap: 16,
-            background: "var(--color-row-alt)",
-            borderBottom: "1px solid var(--color-border)",
-            padding: "12px 16px",
+            padding: "12px 20px",
             position: "sticky",
-            top: 113, // 56 (top bar) + ~57 (sticky filter bar)
+            top: STICKY_HEADER_TOP,
             zIndex: 5,
           }}
         >
@@ -132,15 +123,15 @@ export function RosterTable({ rows }: RosterTableProps) {
                   navigate(row.studentId);
                 }
               }}
-              className="qn-roster-row grid cursor-pointer items-center transition-colors duration-[120ms] ease-out hover:bg-[var(--color-row-alt)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-focus)]"
+              className="qn-roster-row grid cursor-pointer items-center transition-colors duration-[120ms] ease-out hover:bg-[var(--surface-inner)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--olive-600)]"
               style={{
                 gridTemplateColumns: COLUMN_TEMPLATE,
                 columnGap: 16,
-                padding: "14px 16px",
+                padding: "14px 20px",
                 minHeight: 56,
-                background: isAlt ? "var(--color-row-alt)" : "var(--color-bg)",
+                background: isAlt ? "var(--surface-inner)" : "var(--surface-card)",
                 borderBottom:
-                  idx === sorted.length - 1 ? "none" : "1px solid var(--color-border)",
+                  idx === sorted.length - 1 ? "none" : "1px solid var(--border-default)",
               }}
             >
               <div className="min-w-0">
@@ -148,17 +139,17 @@ export function RosterTable({ rows }: RosterTableProps) {
                   href={`/students/${row.studentId}`}
                   onClick={(e) => e.stopPropagation()}
                   className="qn-row-name truncate text-[13px] font-semibold leading-5 hover:underline"
-                  style={{ color: "var(--color-text)" }}
+                  style={{ color: "var(--text-primary)" }}
                 >
                   {row.fullName}
                 </Link>
               </div>
-              <span className="text-[13px] leading-5" style={{ color: "var(--color-text)" }}>
+              <span className="text-[13px] leading-5" style={{ color: "var(--text-primary)" }}>
                 {row.sport}
               </span>
               <span
                 className="font-mono text-[13px] leading-5"
-                style={{ color: "var(--color-text)" }}
+                style={{ color: "var(--text-primary)" }}
               >
                 {row.graduationYear}
               </span>
@@ -169,18 +160,18 @@ export function RosterTable({ rows }: RosterTableProps) {
                 {row.weeksToCriticalAction != null && row.weeksToCriticalAction <= 4 ? (
                   <ActionWindowPill weeks={row.weeksToCriticalAction} />
                 ) : (
-                  <span style={{ color: "var(--color-muted)" }}>—</span>
+                  <span style={{ color: "var(--text-tertiary)" }}>—</span>
                 )}
               </span>
               <span
                 className="truncate text-[13px] leading-5"
-                style={{ color: "#374151" }}
+                style={{ color: "var(--text-secondary)" }}
                 title={row.primaryConcern ?? undefined}
               >
                 {row.primaryConcern ?? "—"}
               </span>
               <span className="flex justify-center" aria-hidden>
-                <ChevronRight size={16} style={{ color: "#9CA3AF" }} />
+                <ChevronRight size={16} style={{ color: "var(--text-quaternary)" }} />
               </span>
             </div>
           );
@@ -193,8 +184,7 @@ export function RosterTable({ rows }: RosterTableProps) {
 function HeaderCell({ label }: { label: string }) {
   return (
     <span
-      className="text-[11px] font-semibold uppercase leading-4"
-      style={{ color: "var(--color-muted)", letterSpacing: "0.06em" }}
+      className="font-sans text-[11px] font-semibold uppercase leading-4 tracking-[0.06em] text-[var(--text-tertiary)]"
     >
       {label}
     </span>
@@ -217,8 +207,7 @@ function SortableHeader({
       type="button"
       onClick={onClick}
       aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
-      className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase leading-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
-      style={{ color: "var(--color-muted)", letterSpacing: "0.06em" }}
+      className="inline-flex items-center gap-1 font-sans text-[11px] font-semibold uppercase leading-4 tracking-[0.06em] text-[var(--text-tertiary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--olive-600)]"
     >
       <span>{label}</span>
       {active ? (

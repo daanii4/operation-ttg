@@ -1,40 +1,57 @@
 "use client";
 
 /**
- * QuasarNova v1 — Roster page client orchestrator.
+ * Roster page client — Scholars OS layout pattern.
  *
- * Holds the filter state and routes between two render trees:
- *   • desktop ≥768px → RosterFilters + RosterTable + pagination
- *   • mobile  <768px → mobile search bar + active filter strip + RosterCardList
- *
- * Both trees consume the same useRosterFilters() hook so the desktop dropdowns
- * and the mobile bottom sheet stay in sync. We do not try to make one
- * component do both layouts (per spec §7).
+ * Filters sit on the page surface (search pill + chips + bottom rule).
+ * The roster table lives in a single Card, not separate boxed panels.
  */
 
 import * as React from "react";
-import { Search, Sliders, Users, X } from "lucide-react";
-import { Button, Input } from "@/components/ui/qn";
+import { useRouter } from "next/navigation";
+import { Plus, Sliders, Users, X } from "lucide-react";
+import Card from "@/components/ui/Card";
+import { Button } from "@/components/ui/qn";
 import type { QnRosterRow } from "@/lib/cohort/qn-roster";
 import { RosterFilters } from "./_components/RosterFilters";
 import { RosterTable } from "./_components/RosterTable";
 import { RosterCardList } from "./_components/RosterCardList";
 import { RosterFilterSheet } from "./_components/RosterFilterSheet";
+import {
+  StudentIntakeModal,
+  type IntakeSchoolOption,
+} from "./_components/StudentIntakeModal";
 import { useRosterFilters } from "./_components/use-roster-filters";
 
 const PAGE_SIZE = 50;
 
 export interface RosterPageClientProps {
   rows: QnRosterRow[];
+  canCreateStudents: boolean;
+  schools: IntakeSchoolOption[];
 }
 
-export default function RosterPageClient({ rows }: RosterPageClientProps) {
+export default function RosterPageClient({
+  rows,
+  canCreateStudents,
+  schools,
+}: RosterPageClientProps) {
+  const router = useRouter();
   const filters = useRosterFilters(rows);
+  const [intakeOpen, setIntakeOpen] = React.useState(false);
+
+  const addStudentButton = canCreateStudents ? (
+    <Button variant="gold" icon={Plus} onClick={() => setIntakeOpen(true)}>
+      Add student
+    </Button>
+  ) : null;
+
+  const onStudentCreated = React.useCallback(() => {
+    router.refresh();
+  }, [router]);
 
   const [page, setPage] = React.useState(1);
   React.useEffect(() => {
-    // Any filter change resets pagination so the user doesn't land on an
-    // empty page after narrowing the result set.
     setPage(1);
   }, [
     filters.state.search,
@@ -52,40 +69,41 @@ export default function RosterPageClient({ rows }: RosterPageClientProps) {
       : filters.filtered;
   const showPager = total > PAGE_SIZE;
 
-  // Mobile sheet state.
   const [sheetOpen, setSheetOpen] = React.useState(false);
 
   return (
     <>
       {/* ===================== Desktop (≥768px) ===================== */}
-      <div
-        className="hidden md:block"
-        style={{
-          maxWidth: 1280,
-          marginLeft: "auto",
-          marginRight: "auto",
-          paddingLeft: 32,
-          paddingRight: 32,
-          paddingTop: 0,
-          paddingBottom: 28,
-        }}
-      >
-        <RosterFilters filters={filters} />
+      <div className="hidden md:block">
+        <RosterFilters
+          filters={filters}
+          totalCount={rows.length}
+          filteredCount={total}
+          addStudentAction={addStudentButton}
+        />
 
-        {pageRows.length === 0 ? (
-          filters.activeFilterCount === 0 && rows.length === 0 ? (
-            <RosterEmpty />
+        <Card variant="default" padding="none" radius="lg" className="overflow-hidden">
+          <div className="border-b border-[var(--border-default)] px-5 py-4 md:px-6">
+            <h2 className="font-serif text-[20px] leading-[1.25] text-[var(--text-primary)]">
+              Student roster
+            </h2>
+          </div>
+
+          {pageRows.length === 0 ? (
+            filters.activeFilterCount === 0 && rows.length === 0 ? (
+              <RosterEmpty
+                canCreateStudents={canCreateStudents}
+                onAddStudent={() => setIntakeOpen(true)}
+              />
+            ) : (
+              <RosterEmptyFiltered onClear={filters.clearAll} />
+            )
           ) : (
-            <RosterEmptyFiltered onClear={filters.clearAll} />
-          )
-        ) : (
-          <RosterTable rows={pageRows} />
-        )}
+            <RosterTable rows={pageRows} />
+          )}
+        </Card>
 
-        <div
-          className="mt-4 flex items-center justify-between"
-          style={{ fontSize: 12, color: "var(--color-muted)" }}
-        >
+        <div className="mt-4 flex items-center justify-between font-sans text-[12px] text-[var(--text-tertiary)]">
           <p>
             {pageRows.length === 0
               ? "Showing 0 students"
@@ -118,24 +136,8 @@ export default function RosterPageClient({ rows }: RosterPageClientProps) {
       </div>
 
       {/* ====================== Mobile (<768px) ====================== */}
-      <div className="md:hidden">
-        {/* Page title strip + filter button (§3.1). */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "12px 16px",
-            borderBottom: "1px solid var(--color-border)",
-            background: "var(--color-bg)",
-          }}
-        >
-          <h1
-            className="font-serif"
-            style={{ fontSize: 22, lineHeight: "28px", color: "var(--color-text)" }}
-          >
-            Roster
-          </h1>
+      <div className="md:hidden -mx-4 sm:-mx-6">
+        <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-[var(--surface-card)] px-4 py-3">
           <Button
             variant="outline"
             icon={Sliders}
@@ -150,17 +152,8 @@ export default function RosterPageClient({ rows }: RosterPageClientProps) {
               {filters.activeFilterCount > 0 ? (
                 <span
                   aria-hidden
-                  className="inline-flex items-center justify-center rounded-full"
-                  style={{
-                    minWidth: 18,
-                    height: 18,
-                    paddingLeft: 4,
-                    paddingRight: 4,
-                    background: "var(--color-green)",
-                    color: "#fff",
-                    fontSize: 11,
-                    fontWeight: 600,
-                  }}
+                  className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-[var(--olive-600)] px-1 text-[11px] font-semibold text-white"
+                  style={{ height: 18 }}
                 >
                   {filters.activeFilterCount}
                 </span>
@@ -169,40 +162,18 @@ export default function RosterPageClient({ rows }: RosterPageClientProps) {
           </Button>
         </div>
 
-        {/* Mobile search bar — pill input, 16px font, full width. */}
-        <div
-          style={{
-            position: "sticky",
-            top: 52, // top bar height
-            zIndex: 15,
-            background: "var(--color-bg)",
-            borderBottom: "1px solid var(--color-border)",
-            padding: "8px 16px",
-          }}
-        >
-          <Input
-            mobile
-            pill
-            icon={Search}
-            placeholder="Search students"
-            aria-label="Search roster"
-            value={filters.state.search}
-            onChange={(e) => filters.setSearch(e.target.value)}
+        <div className="px-4 pt-4">
+          <RosterFilters
+            filters={filters}
+            totalCount={rows.length}
+            filteredCount={total}
+            addStudentAction={addStudentButton}
           />
         </div>
 
-        {/* Active filter strip. */}
         {filters.activeChips.length > 0 ? (
           <div
-            className="qn-no-scrollbar"
-            style={{
-              display: "flex",
-              gap: 8,
-              padding: "8px 16px",
-              overflowX: "auto",
-              borderBottom: "1px solid var(--color-border)",
-              background: "var(--color-bg)",
-            }}
+            className="qn-no-scrollbar flex gap-2 overflow-x-auto border-b border-[var(--border-default)] px-4 py-2"
           >
             {filters.activeChips.map((chip) => (
               <button
@@ -211,14 +182,7 @@ export default function RosterPageClient({ rows }: RosterPageClientProps) {
                 onClick={() =>
                   filters.removeFilter(chip.kind as never, chip.value as never)
                 }
-                className="inline-flex shrink-0 items-center gap-1 rounded-full border whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
-                style={{
-                  padding: "6px 10px",
-                  background: "white",
-                  borderColor: "var(--color-border)",
-                  color: "var(--color-text)",
-                  fontSize: 12,
-                }}
+                className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] px-2.5 py-1.5 font-sans text-[12px] text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--olive-600)]"
                 aria-label={`Remove filter ${chip.label}`}
               >
                 {chip.label}
@@ -228,26 +192,26 @@ export default function RosterPageClient({ rows }: RosterPageClientProps) {
           </div>
         ) : null}
 
-        {pageRows.length === 0 ? (
-          filters.activeFilterCount === 0 && rows.length === 0 ? (
-            <RosterEmpty mobile />
-          ) : (
-            <RosterEmptyFiltered onClear={filters.clearAll} mobile />
-          )
-        ) : (
-          <RosterCardList rows={pageRows} />
-        )}
+        <div className="px-4 pt-4">
+          <Card variant="default" padding="none" radius="lg" className="overflow-hidden">
+            {pageRows.length === 0 ? (
+              filters.activeFilterCount === 0 && rows.length === 0 ? (
+                <RosterEmpty
+                  mobile
+                  canCreateStudents={canCreateStudents}
+                  onAddStudent={() => setIntakeOpen(true)}
+                />
+              ) : (
+                <RosterEmptyFiltered onClear={filters.clearAll} mobile />
+              )
+            ) : (
+              <RosterCardList rows={pageRows} />
+            )}
+          </Card>
+        </div>
 
         {showPager ? (
-          <div
-            className="flex items-center justify-between"
-            style={{
-              padding: "12px 16px",
-              fontSize: 12,
-              color: "var(--color-muted)",
-              borderTop: "1px solid var(--color-border)",
-            }}
-          >
+          <div className="flex items-center justify-between border-t border-[var(--border-default)] px-4 py-3 font-sans text-[12px] text-[var(--text-tertiary)]">
             <span>
               {(safePage - 1) * PAGE_SIZE + 1}–
               {Math.min(safePage * PAGE_SIZE, total)} of {total}
@@ -270,14 +234,7 @@ export default function RosterPageClient({ rows }: RosterPageClientProps) {
             </div>
           </div>
         ) : pageRows.length > 0 ? (
-          <p
-            style={{
-              textAlign: "center",
-              padding: 16,
-              fontSize: 12,
-              color: "var(--color-muted)",
-            }}
-          >
+          <p className="py-4 text-center font-sans text-[12px] text-[var(--text-tertiary)]">
             End of roster
           </p>
         ) : null}
@@ -287,39 +244,60 @@ export default function RosterPageClient({ rows }: RosterPageClientProps) {
           onClose={() => setSheetOpen(false)}
           filters={filters}
         />
+
+        {canCreateStudents ? (
+          <button
+            type="button"
+            className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full border-0 bg-[var(--gold-500)] text-[22px] font-medium leading-none text-[#1e2b12] shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--olive-600)] md:hidden"
+            onClick={() => setIntakeOpen(true)}
+            aria-label="Add student"
+          >
+            <Plus size={24} aria-hidden />
+          </button>
+        ) : null}
       </div>
+
+      {canCreateStudents ? (
+        <StudentIntakeModal
+          open={intakeOpen}
+          onClose={() => setIntakeOpen(false)}
+          schools={schools}
+          onCreated={onStudentCreated}
+        />
+      ) : null}
     </>
   );
 }
 
-function RosterEmpty({ mobile = false }: { mobile?: boolean }) {
+function RosterEmpty({
+  mobile = false,
+  canCreateStudents = false,
+  onAddStudent,
+}: {
+  mobile?: boolean;
+  canCreateStudents?: boolean;
+  onAddStudent?: () => void;
+}) {
   return (
     <div
-      className="flex flex-col items-center justify-center text-center"
-      style={{
-        padding: mobile ? 32 : 48,
-        background: "var(--color-bg)",
-      }}
+      className="flex flex-col items-center justify-center px-6 text-center"
+      style={{ paddingTop: mobile ? 32 : 48, paddingBottom: mobile ? 32 : 48 }}
       role="status"
     >
-      <Users size={40} aria-hidden style={{ color: "#9CA3AF" }} />
-      <p
-        className="font-semibold"
-        style={{ fontSize: 16, lineHeight: "24px", marginTop: 16, color: "var(--color-text)" }}
-      >
+      <Users size={40} aria-hidden className="text-[var(--text-quaternary)]" />
+      <p className="mt-4 font-sans text-[16px] font-semibold leading-6 text-[var(--text-primary)]">
         No students yet
       </p>
-      <p
-        style={{
-          fontSize: 13,
-          lineHeight: "20px",
-          marginTop: 4,
-          color: "var(--color-muted)",
-          maxWidth: 320,
-        }}
-      >
+      <p className="mt-1 max-w-xs font-sans text-[13px] leading-5 text-[var(--text-tertiary)]">
         Add a student to start tracking their eligibility.
       </p>
+      {canCreateStudents && onAddStudent ? (
+        <div className="mt-4">
+          <Button variant="gold" icon={Plus} onClick={onAddStudent}>
+            Add student
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -333,29 +311,15 @@ function RosterEmptyFiltered({
 }) {
   return (
     <div
-      className="flex flex-col items-center justify-center text-center"
-      style={{
-        padding: mobile ? 32 : 48,
-        background: "var(--color-bg)",
-      }}
+      className="flex flex-col items-center justify-center px-6 text-center"
+      style={{ paddingTop: mobile ? 32 : 48, paddingBottom: mobile ? 32 : 48 }}
       role="status"
     >
-      <Users size={40} aria-hidden style={{ color: "#9CA3AF" }} />
-      <p
-        className="font-semibold"
-        style={{ fontSize: 16, lineHeight: "24px", marginTop: 16, color: "var(--color-text)" }}
-      >
+      <Users size={40} aria-hidden className="text-[var(--text-quaternary)]" />
+      <p className="mt-4 font-sans text-[16px] font-semibold leading-6 text-[var(--text-primary)]">
         No students match your filters
       </p>
-      <p
-        style={{
-          fontSize: 13,
-          lineHeight: "20px",
-          marginTop: 4,
-          color: "var(--color-muted)",
-          maxWidth: 360,
-        }}
-      >
+      <p className="mt-1 max-w-sm font-sans text-[13px] leading-5 text-[var(--text-tertiary)]">
         Try clearing one or more filters to widen results.
       </p>
       <div className="mt-4">

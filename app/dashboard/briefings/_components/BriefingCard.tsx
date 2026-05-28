@@ -41,9 +41,11 @@ function relativeFromNow(d: Date): string {
 export interface BriefingCardProps {
   selected: QnRosterRow | null;
   briefing: UseBriefingResult;
+  /** Renders inside StudentWorkspaceLayout without an extra card frame. */
+  embedded?: boolean;
 }
 
-export function BriefingCard({ selected, briefing }: BriefingCardProps) {
+export function BriefingCard({ selected, briefing, embedded = false }: BriefingCardProps) {
   if (!selected) return <NoSelection />;
 
   if (briefing.status === "loading") {
@@ -68,11 +70,8 @@ export function BriefingCard({ selected, briefing }: BriefingCardProps) {
     ? relativeFromNow(briefing.computedAt)
     : undefined;
 
-  return (
-    <article
-      className="overflow-hidden rounded-lg bg-white"
-      style={{ border: "1px solid var(--color-border)" }}
-    >
+  const content = (
+    <>
       <BriefingHero
         student={selected}
         updatedRelative={updatedRelative}
@@ -85,11 +84,25 @@ export function BriefingCard({ selected, briefing }: BriefingCardProps) {
             filenameHint={`briefing-${selected.firstName}-${selected.lastName}`.toLowerCase()}
           />
         }
+        embedded={embedded}
       />
       {insufficient ? <InsufficientEvidenceBanner /> : null}
       <InterventionCodes f12={data.f12} sectionBorder />
       <LayerSummary payload={data} />
       <EvidenceFooter payload={data} computedAt={briefing.computedAt} />
+    </>
+  );
+
+  if (embedded) {
+    return <article className="[&>section:last-child]:border-b-0">{content}</article>;
+  }
+
+  return (
+    <article
+      className="overflow-hidden rounded-lg bg-[var(--surface-card)]"
+      style={{ border: "1px solid var(--border-default)" }}
+    >
+      {content}
     </article>
   );
 }
@@ -106,9 +119,9 @@ function NoSelection() {
     <div
       role="status"
       className="flex flex-col items-center justify-center text-center"
-      style={{ padding: 64, color: "var(--color-text)" }}
+      style={{ padding: 64, color: "var(--text-primary)" }}
     >
-      <FileText size={40} aria-hidden style={{ color: "#9CA3AF" }} />
+      <FileText size={40} aria-hidden style={{ color: "var(--text-quaternary)" }} />
       <p className="text-base font-semibold" style={{ marginTop: 16 }}>
         Select a student
       </p>
@@ -117,7 +130,7 @@ function NoSelection() {
           fontSize: 13,
           lineHeight: "20px",
           marginTop: 4,
-          color: "var(--color-muted)",
+          color: "var(--text-tertiary)",
           maxWidth: 360,
         }}
       >
@@ -132,9 +145,9 @@ function NoBriefingData() {
     <div
       role="status"
       className="flex flex-col items-center justify-center text-center"
-      style={{ padding: 64, color: "var(--color-text)" }}
+      style={{ padding: 64, color: "var(--text-primary)" }}
     >
-      <Inbox size={40} aria-hidden style={{ color: "#9CA3AF" }} />
+      <Inbox size={40} aria-hidden style={{ color: "var(--text-quaternary)" }} />
       <p className="text-base font-semibold" style={{ marginTop: 16 }}>
         No briefing available yet
       </p>
@@ -143,7 +156,7 @@ function NoBriefingData() {
           fontSize: 13,
           lineHeight: "20px",
           marginTop: 4,
-          color: "var(--color-muted)",
+          color: "var(--text-tertiary)",
           maxWidth: 360,
         }}
       >
@@ -165,9 +178,9 @@ function ErrorCard({
       role="alert"
       className="overflow-hidden rounded-lg"
       style={{
-        border: "1px solid var(--color-border)",
+        border: "1px solid var(--border-default)",
         borderLeft: "3px solid var(--color-red)",
-        background: "var(--color-bg)",
+        background: "var(--surface-card)",
       }}
     >
       <div
@@ -185,7 +198,7 @@ function ErrorCard({
           style={{ color: "var(--color-red)", flexShrink: 0, marginTop: 2 }}
         />
         <div className="flex-1">
-          <p style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
             Couldn't load briefing
           </p>
           <p

@@ -15,19 +15,24 @@ import {
   evidenceTierLabel,
 } from "@/lib/calculations/display-labels";
 import type { F11Result } from "@/lib/calculations/types";
+import {
+  workspaceSectionShell,
+  type WorkspaceSectionVariant,
+} from "@/lib/ui/workspace-section";
 
 export interface EngagementCardProps {
   f11: F11Result | null | undefined;
+  variant?: WorkspaceSectionVariant;
 }
 
 function gaugeColor(value: number | null): string {
-  if (value == null) return "var(--color-muted)";
+  if (value == null) return "var(--text-tertiary)";
   if (value < 0.4) return "var(--color-red)";
   if (value < 0.7) return "var(--color-yellow)";
   return "var(--color-green)";
 }
 
-export function EngagementCard({ f11 }: EngagementCardProps) {
+export function EngagementCard({ f11, variant = "card" }: EngagementCardProps) {
   const insufficient = !f11 || f11.evidence_tier === "Insufficient";
   const avg = f11?.window_avg ?? null;
   const color = gaugeColor(avg);
@@ -36,22 +41,16 @@ export function EngagementCard({ f11 }: EngagementCardProps) {
   return (
     <section
       aria-labelledby="engagement-heading"
-      style={{
-        padding: 20,
-        background: "var(--color-bg)",
-        borderRadius: 8,
-        border: "1px solid var(--color-border)",
-      }}
+      style={workspaceSectionShell(variant)}
     >
       <header className="flex items-baseline justify-between">
         <h3
           id="engagement-heading"
-          className="text-base font-semibold"
-          style={{ color: "var(--color-text)" }}
+          className="font-serif text-[18px] font-normal leading-snug text-[var(--text-primary)]"
         >
           Engagement
         </h3>
-        <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
+        <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
           F11 · window average
         </span>
       </header>
@@ -69,7 +68,7 @@ export function EngagementCard({ f11 }: EngagementCardProps) {
             width: "100%",
             height: 12,
             borderRadius: 6,
-            background: "var(--color-row-alt)",
+            background: "var(--surface-inner)",
             overflow: "hidden",
           }}
         >
@@ -117,12 +116,12 @@ export function EngagementCard({ f11 }: EngagementCardProps) {
               fontFamily: "var(--font-mono)",
               fontSize: 22,
               fontWeight: 500,
-              color: insufficient ? "var(--color-muted)" : color,
+              color: insufficient ? "var(--text-tertiary)" : color,
             }}
           >
             {avg != null ? avg.toFixed(2) : "—"}
           </span>
-          <span style={{ fontSize: 11, color: "var(--color-muted)" }}>
+          <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
             scale 0.0 → 1.0
           </span>
         </div>
@@ -153,8 +152,8 @@ export function EngagementCard({ f11 }: EngagementCardProps) {
           className="inline-flex items-center gap-1.5 rounded-full"
           style={{
             padding: "4px 10px",
-            background: "var(--color-row-alt)",
-            color: "var(--color-text)",
+            background: "var(--surface-inner)",
+            color: "var(--text-primary)",
             fontSize: 12,
             fontWeight: 500,
           }}
@@ -181,12 +180,12 @@ export function EngagementCard({ f11 }: EngagementCardProps) {
       </div>
 
       {f11?.insufficient_reason ? (
-        <p className="mt-3" style={{ fontSize: 12, color: "var(--color-muted)" }}>
+        <p className="mt-3" style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
           {f11.insufficient_reason}
         </p>
       ) : null}
 
-      <p className="mt-3" style={{ fontSize: 11, color: "var(--color-muted)" }}>
+      <p className="mt-3" style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
         {f11 ? evidenceTierLabel(f11.evidence_tier) : "—"}
       </p>
     </section>
@@ -200,7 +199,7 @@ function TrendIcon({ trend }: { trend: F11Result["trend"] | null }) {
   if (trend === "declining") {
     return <TrendingDown size={12} aria-hidden style={{ color: "var(--color-red)" }} />;
   }
-  return <MinusCircle size={12} aria-hidden style={{ color: "var(--color-muted)" }} />;
+  return <MinusCircle size={12} aria-hidden style={{ color: "var(--text-tertiary)" }} />;
 }
 
 export default EngagementCard;

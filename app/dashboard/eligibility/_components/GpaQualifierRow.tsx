@@ -12,6 +12,10 @@
 import * as React from "react";
 import type { F4Result } from "@/lib/calculations/f4";
 import type { F7Result } from "@/lib/calculations/f7";
+import {
+  workspaceSectionShell,
+  type WorkspaceSectionVariant,
+} from "@/lib/ui/workspace-section";
 
 type Tone = "green" | "yellow" | "red";
 
@@ -64,6 +68,7 @@ export interface GpaQualifierRowProps {
   /** Which divisions to render — derived from the student's targetDivision. */
   showD1?: boolean;
   showD2?: boolean;
+  variant?: WorkspaceSectionVariant;
 }
 
 export function GpaQualifierRow({
@@ -71,26 +76,21 @@ export function GpaQualifierRow({
   f7,
   showD1 = true,
   showD2 = true,
+  variant = "card",
 }: GpaQualifierRowProps) {
   return (
     <section
       aria-labelledby="gpa-qualifier-heading"
-      style={{
-        padding: 20,
-        background: "var(--color-bg)",
-        borderRadius: 8,
-        border: "1px solid var(--color-border)",
-      }}
+      style={workspaceSectionShell(variant)}
     >
       <header className="flex items-baseline justify-between">
         <h3
           id="gpa-qualifier-heading"
-          className="text-base font-semibold"
-          style={{ color: "var(--color-text)" }}
+          className="font-serif text-[18px] font-normal leading-snug text-[var(--text-primary)]"
         >
           NCAA Core GPA Qualifier
         </h3>
-        <span style={{ fontSize: 11, color: "var(--color-muted)" }}>F4 · F7</span>
+        <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>F4 · F7</span>
       </header>
 
       <div
@@ -148,7 +148,7 @@ function Cell({
       style={{
         padding: 16,
         borderRadius: 6,
-        background: "var(--color-row-alt)",
+        background: "var(--surface-inner)",
       }}
     >
       <div className="flex items-baseline justify-between">
@@ -158,7 +158,7 @@ function Cell({
             fontWeight: 600,
             textTransform: "uppercase",
             letterSpacing: "0.06em",
-            color: "var(--color-muted)",
+            color: "var(--text-tertiary)",
           }}
         >
           NCAA {division} Core GPA
@@ -181,7 +181,7 @@ function Cell({
             fontFamily: "var(--font-mono)",
             fontSize: 22,
             fontWeight: 500,
-            color: "var(--color-text)",
+            color: "var(--text-primary)",
           }}
         >
           {gpa != null ? gpa.toFixed(2) : "—"}
@@ -203,7 +203,7 @@ function Cell({
         </span>
       </div>
       {thresholdDetail ? (
-        <p style={{ marginTop: 8, fontSize: 11, color: "var(--color-muted)" }}>
+        <p style={{ marginTop: 8, fontSize: 11, color: "var(--text-tertiary)" }}>
           {thresholdDetail}
         </p>
       ) : null}

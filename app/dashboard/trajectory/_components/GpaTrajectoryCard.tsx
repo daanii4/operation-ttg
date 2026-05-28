@@ -29,6 +29,10 @@ import {
   tierToChipBucket,
 } from "@/app/dashboard/briefings/_components/use-briefing-data";
 import type { F9Result } from "@/lib/calculations/types";
+import {
+  workspaceSectionShell,
+  type WorkspaceSectionVariant,
+} from "@/lib/ui/workspace-section";
 
 export type ObservedGrade = { observed_grade: string; observed_at: string | Date };
 
@@ -42,7 +46,7 @@ const Chart = dynamic(() => import("./GpaTrajectoryChart"), {
       style={{
         width: "100%",
         height: 240,
-        background: "var(--color-row-alt)",
+        background: "var(--surface-inner)",
         borderRadius: 6,
       }}
     />
@@ -53,6 +57,8 @@ export interface GpaTrajectoryCardProps {
   f9: F9Result | null | undefined;
   /** Observed grade samples used to seed the chart. */
   observations: ObservedGrade[] | null;
+  /** Flat section inside StudentWorkspaceLayout (no nested card chrome). */
+  variant?: WorkspaceSectionVariant;
 }
 
 const LETTER_TO_GPA: Record<string, number> = {
@@ -70,28 +76,26 @@ const LETTER_TO_GPA: Record<string, number> = {
   F: 0.0,
 };
 
-export function GpaTrajectoryCard({ f9, observations }: GpaTrajectoryCardProps) {
+export function GpaTrajectoryCard({
+  f9,
+  observations,
+  variant = "card",
+}: GpaTrajectoryCardProps) {
   const insufficient = !f9 || f9.evidence_tier === "Insufficient";
 
   return (
     <section
       aria-labelledby="gpa-trajectory-heading"
-      style={{
-        padding: 20,
-        background: "var(--color-bg)",
-        borderRadius: 8,
-        border: "1px solid var(--color-border)",
-      }}
+      style={workspaceSectionShell(variant)}
     >
       <header className="flex items-baseline justify-between">
         <h3
           id="gpa-trajectory-heading"
-          className="text-base font-semibold"
-          style={{ color: "var(--color-text)" }}
+          className="font-serif text-[18px] font-normal leading-snug text-[var(--text-primary)]"
         >
           GPA Trajectory
         </h3>
-        <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
+        <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
           F9 · 63d window + 30d regression
         </span>
       </header>
@@ -131,7 +135,7 @@ export function GpaTrajectoryCard({ f9, observations }: GpaTrajectoryCardProps) 
         <EvidenceTierChip tier={f9 ? toChip(f9.evidence_tier) : "Insufficient"} />
         {f9 ? (
           <span
-            style={{ fontSize: 11, color: "var(--color-muted)", marginLeft: "auto" }}
+            style={{ fontSize: 11, color: "var(--text-tertiary)", marginLeft: "auto" }}
           >
             {evidenceTierLabel(f9.evidence_tier)}
           </span>
@@ -175,16 +179,16 @@ function InsufficientState({ reason }: { reason: string }) {
       style={{
         padding: 24,
         borderRadius: 6,
-        background: "var(--color-row-alt)",
+        background: "var(--surface-inner)",
         textAlign: "center",
-        color: "var(--color-muted)",
+        color: "var(--text-tertiary)",
       }}
     >
       <p
         style={{
           fontSize: 13,
           fontWeight: 600,
-          color: "var(--color-text)",
+          color: "var(--text-primary)",
         }}
       >
         Insufficient data for trajectory
@@ -210,13 +214,13 @@ function Chip({
       ? "var(--color-red)"
       : tone === "ok"
         ? "var(--color-green)"
-        : "var(--color-muted)";
+        : "var(--text-tertiary)";
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full"
       style={{
         padding: "4px 10px",
-        background: "var(--color-row-alt)",
+        background: "var(--surface-inner)",
         color,
         fontSize: 12,
         fontWeight: 500,

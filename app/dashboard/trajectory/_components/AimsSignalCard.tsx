@@ -18,6 +18,10 @@ import {
   evidenceTierLabel,
 } from "@/lib/calculations/display-labels";
 import type { AimsRiskBand, F10Result } from "@/lib/calculations/types";
+import {
+  workspaceSectionShell,
+  type WorkspaceSectionVariant,
+} from "@/lib/ui/workspace-section";
 
 const RISK_TONE: Record<AimsRiskBand, { fg: string; bg: string; border: string }> = {
   Low: {
@@ -36,17 +40,18 @@ const RISK_TONE: Record<AimsRiskBand, { fg: string; bg: string; border: string }
     border: "var(--color-red)",
   },
   Insufficient: {
-    fg: "var(--color-muted)",
-    bg: "var(--color-row-alt)",
-    border: "var(--color-border)",
+    fg: "var(--text-tertiary)",
+    bg: "var(--surface-inner)",
+    border: "var(--border-default)",
   },
 };
 
 export interface AimsSignalCardProps {
   f10: F10Result | null | undefined;
+  variant?: WorkspaceSectionVariant;
 }
 
-export function AimsSignalCard({ f10 }: AimsSignalCardProps) {
+export function AimsSignalCard({ f10, variant = "card" }: AimsSignalCardProps) {
   const riskBand = f10?.risk_band ?? "Insufficient";
   const tone = RISK_TONE[riskBand];
   const delta = f10?.within_subject_delta_pct ?? null;
@@ -56,22 +61,16 @@ export function AimsSignalCard({ f10 }: AimsSignalCardProps) {
   return (
     <section
       aria-labelledby="aims-signal-heading"
-      style={{
-        padding: 20,
-        background: "var(--color-bg)",
-        borderRadius: 8,
-        border: "1px solid var(--color-border)",
-      }}
+      style={workspaceSectionShell(variant)}
     >
       <header className="flex items-baseline justify-between">
         <h3
           id="aims-signal-heading"
-          className="text-base font-semibold"
-          style={{ color: "var(--color-text)" }}
+          className="font-serif text-[18px] font-normal leading-snug text-[var(--text-primary)]"
         >
           AIMS Signal
         </h3>
-        <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
+        <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
           F10 · within-subject delta
         </span>
       </header>
@@ -139,7 +138,7 @@ export function AimsSignalCard({ f10 }: AimsSignalCardProps) {
       {f10?.insufficient_reason ? (
         <p
           className="mt-3"
-          style={{ fontSize: 12, color: "var(--color-muted)" }}
+          style={{ fontSize: 12, color: "var(--text-tertiary)" }}
         >
           {f10.insufficient_reason}
         </p>
@@ -147,7 +146,7 @@ export function AimsSignalCard({ f10 }: AimsSignalCardProps) {
 
       <p
         className="mt-3"
-        style={{ fontSize: 11, color: "var(--color-muted)" }}
+        style={{ fontSize: 11, color: "var(--text-tertiary)" }}
       >
         {f10 ? evidenceTierLabel(f10.evidence_tier) : "—"}
       </p>
@@ -166,7 +165,7 @@ function DeltaReadout({
     return (
       <span
         className="inline-flex items-center gap-2"
-        style={{ fontSize: 22, fontFamily: "var(--font-mono)", color: "var(--color-muted)" }}
+        style={{ fontSize: 22, fontFamily: "var(--font-mono)", color: "var(--text-tertiary)" }}
       >
         <MinusCircle size={20} aria-hidden />
         —
@@ -181,7 +180,7 @@ function DeltaReadout({
       ? "var(--color-red)"
       : delta < 0
         ? "var(--color-green)"
-        : "var(--color-muted)";
+        : "var(--text-tertiary)";
 
   return (
     <span

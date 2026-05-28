@@ -29,6 +29,7 @@ export interface BriefingHeroProps {
   /** Override the band when the F12 result reports a different value. */
   bandOverride?: Band;
   weeksOverride?: number | null;
+  embedded?: boolean;
 }
 
 export function BriefingHero({
@@ -37,6 +38,7 @@ export function BriefingHero({
   exportButton,
   bandOverride,
   weeksOverride,
+  embedded = false,
 }: BriefingHeroProps) {
   const band = bandOverride ?? student.band;
   const weeks = weeksOverride === undefined ? student.weeksToCriticalAction : weeksOverride;
@@ -45,8 +47,8 @@ export function BriefingHero({
   return (
     <section
       style={{
-        padding: "24px 28px",
-        borderBottom: "1px solid var(--color-border)",
+        padding: embedded ? "20px 24px" : "24px 28px",
+        borderBottom: "1px solid var(--border-default)",
         borderLeft: isEscalated ? "4px solid var(--color-escalated)" : undefined,
       }}
     >
@@ -57,7 +59,7 @@ export function BriefingHero({
             style={{
               fontSize: 24,
               lineHeight: "32px",
-              color: "var(--color-text)",
+              color: "var(--text-primary)",
               margin: 0,
             }}
           >
@@ -70,7 +72,7 @@ export function BriefingHero({
               style={{
                 fontSize: 12,
                 lineHeight: "16px",
-                color: "var(--color-muted)",
+                color: "var(--text-tertiary)",
               }}
             >
               {student.sport} · Class of {student.graduationYear}

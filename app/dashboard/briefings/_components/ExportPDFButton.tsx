@@ -31,7 +31,7 @@ export interface ExportPDFButtonProps {
 export function ExportPDFButton({
   studentId,
   studentName,
-  variant = "outline",
+  variant = "gold",
   fullWidth,
   filenameHint,
 }: ExportPDFButtonProps) {

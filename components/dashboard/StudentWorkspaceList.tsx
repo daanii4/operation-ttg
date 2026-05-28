@@ -1,40 +1,32 @@
 "use client";
 
 /**
- * Sprint 6 — shared student selector panel.
- *
- * Used by the Briefings, Trajectory, and Eligibility tabs (desktop only).
- * 320px wide scrollable list with a header (title + count + filter input).
- * Pre-sorted by the caller; the panel is purely presentational.
- *
- * Visual contract matches QuasarNova v1 §4.2:
- *   - selected row gets a 3px green accent bar + #F0FDF4 background.
- *   - inactive rows: 1px bottom divider, hover bg #F9FAFB.
- *   - keyboard focus: 2px green ring inset.
+ * Student list column for Trajectory / Eligibility / Briefings (desktop).
+ * Renders inside StudentWorkspaceLayout — not a separate white panel.
  */
 
 import * as React from "react";
 import { Search } from "lucide-react";
-import { ActionWindowPill, BandBadge, Input } from "@/components/ui/qn";
+import { ActionWindowPill, BandBadge } from "@/components/ui/qn";
 import type { QnRosterRow } from "@/lib/cohort/qn-roster";
 
-export interface StudentSelectorPanelProps {
+export interface StudentWorkspaceListProps {
   rows: QnRosterRow[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  /** Title text in the header. Defaults to "Students". */
   title?: string;
-  /** Hide the BandBadge column (e.g. for Eligibility where the band is less relevant). */
   hideBand?: boolean;
+  ariaLabel?: string;
 }
 
-export function StudentSelectorPanel({
+export function StudentWorkspaceList({
   rows,
   selectedId,
   onSelect,
   title = "Students",
   hideBand = false,
-}: StudentSelectorPanelProps) {
+  ariaLabel,
+}: StudentWorkspaceListProps) {
   const [query, setQuery] = React.useState("");
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -45,41 +37,37 @@ export function StudentSelectorPanel({
   }, [rows, query]);
 
   return (
-    <aside
-      aria-label={`${title} list`}
-      className="hidden md:flex md:flex-col"
-      style={{
-        width: 320,
-        flexShrink: 0,
-        background: "var(--surface-card)",
-        borderRight: "1px solid var(--border-default)",
-        // Sticky below the olive AppHeader (96px + 4px gold rule).
-        height: "calc(100vh - 100px)",
-        position: "sticky",
-        top: 100,
-      }}
+    <div
+      className="flex w-[280px] shrink-0 flex-col border-r border-[var(--border-default)] bg-[var(--surface-card)] lg:w-[300px]"
+      aria-label={ariaLabel ?? `${title} list`}
     >
-      <div style={{ padding: 16, borderBottom: "1px solid var(--border-default)" }}>
+      <div className="border-b border-[var(--border-default)] px-4 py-4">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+          <h2 className="font-serif text-[16px] font-normal leading-tight text-[var(--text-primary)]">
             {title}
           </h2>
-          <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
+          <span className="font-sans text-[12px] text-[var(--text-tertiary)]">
             {filtered.length}
           </span>
         </div>
-        <div className="mt-3">
-          <Input
-            aria-label={`Filter ${title.toLowerCase()}`}
-            placeholder="Filter students"
-            icon={Search}
+        <div className="relative mt-3 w-full">
+          <Search
+            size={14}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-quaternary)]"
+            aria-hidden
+          />
+          <input
+            type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            placeholder="Filter students"
+            aria-label={`Filter ${title.toLowerCase()}`}
+            className="h-9 w-full rounded-full border border-[var(--border-default)] bg-[var(--surface-inner)] pl-9 pr-3 font-sans text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-quaternary)] transition-[border-color,box-shadow,background-color] hover:border-[var(--border-hover)] focus:border-[var(--olive-600)] focus:bg-[var(--surface-card)] focus:shadow-[0_0_0_3px_rgba(92,107,70,0.12)]"
           />
         </div>
       </div>
 
-      <ul role="list" className="flex-1 overflow-y-auto">
+      <ul role="list" className="min-h-0 flex-1 overflow-y-auto">
         {filtered.map((row) => {
           const selected = selectedId === row.studentId;
           return (
@@ -92,35 +80,26 @@ export function StudentSelectorPanel({
                 style={{
                   padding: "12px 16px",
                   borderBottom: "1px solid var(--border-default)",
-                  background: selected ? "var(--color-green-tint)" : "var(--surface-card)",
+                  background: selected ? "var(--color-green-tint)" : "transparent",
                 }}
               >
                 {selected ? (
                   <span
                     aria-hidden
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 3,
-                      background: "var(--color-green)",
-                    }}
+                    className="absolute bottom-0 left-0 top-0 w-[3px] bg-[var(--color-green)]"
                   />
                 ) : null}
                 <div className="flex items-center justify-between gap-3">
                   <span
-                    className="truncate text-[13px] font-semibold leading-5"
-                    style={{ color: selected ? "var(--color-green)" : "var(--text-primary)" }}
+                    className={`truncate text-[13px] font-semibold leading-5 ${
+                      selected ? "text-[var(--color-green)]" : "text-[var(--text-primary)]"
+                    }`}
                   >
                     {row.fullName}
                   </span>
                   {!hideBand ? <BandBadge band={row.band} /> : null}
                 </div>
-                <div
-                  className="mt-1 flex items-center gap-2"
-                  style={{ fontSize: 12, color: "var(--text-tertiary)" }}
-                >
+                <div className="mt-1 flex items-center gap-2 font-sans text-[12px] text-[var(--text-tertiary)]">
                   <span className="truncate">
                     {row.sport} · {row.graduationYear}
                   </span>
@@ -133,8 +112,8 @@ export function StudentSelectorPanel({
           );
         })}
       </ul>
-    </aside>
+    </div>
   );
 }
 
-export default StudentSelectorPanel;
+export default StudentWorkspaceList;

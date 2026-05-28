@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ensureAdvisorProfile } from "@/lib/auth/advisor-profile";
-import { getAdvisorDisplay } from "@/lib/auth/advisor-identity";
 import { getTtgSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/auth/ttg-permissions";
 import { listTeam } from "@/lib/team/team-service";
-import QnShell from "@/components/layout/qn/QnShell";
+import DashboardShell from "@/components/layout/DashboardShell";
+import Breadcrumb from "@/components/layout/Breadcrumb";
 import SettingsTeamSection from "./SettingsTeamSection";
 import SettingsThresholdsSection from "./SettingsThresholdsSection";
 import SettingsDataFeedsSection from "./SettingsDataFeedsSection";
@@ -23,7 +23,6 @@ export default async function SettingsPage({
   searchParams?: { error?: string };
 }) {
   const session = await getTtgSession();
-  const advisor = await getAdvisorDisplay();
   const isAdmin = session?.role === "ADMIN";
 
   const profile =
@@ -90,15 +89,24 @@ export default async function SettingsPage({
   const defaultStudentId = cohort?.students[0]?.studentId ?? null;
 
   return (
-    <QnShell pageTitle="Settings" eyebrow="SETTINGS" advisor={advisor}>
+    <DashboardShell
+      eyebrow="SETTINGS"
+      pageTitle="Settings"
+      pageSubtitle="Thresholds, team, and data feeds"
+    >
+      <Breadcrumb
+        items={[
+          { label: "Operation TTG", href: "/" },
+          { label: "Manteca USD", href: "/dashboard" },
+          { label: "Settings" },
+        ]}
+      />
       <div
         style={{
           maxWidth: 1280,
           marginLeft: "auto",
           marginRight: "auto",
-          paddingLeft: 32,
-          paddingRight: 32,
-          paddingTop: 24,
+          paddingTop: 8,
           paddingBottom: 28,
         }}
       >
@@ -255,7 +263,7 @@ export default async function SettingsPage({
           </dl>
         </Card>
       </div>
-    </QnShell>
+    </DashboardShell>
   );
 }
 

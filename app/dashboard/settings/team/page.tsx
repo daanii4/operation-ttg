@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTtgSession } from "@/lib/auth/session";
-import { getAdvisorDisplay } from "@/lib/auth/advisor-identity";
 import { ensureAdvisorProfile } from "@/lib/auth/advisor-profile";
 import { hasPermission } from "@/lib/auth/ttg-permissions";
 import { listTeam } from "@/lib/team/team-service";
 import { buildCohortResponse } from "@/lib/cohort/build-cohort-response";
-import QnShell from "@/components/layout/qn/QnShell";
+import DashboardShell from "@/components/layout/DashboardShell";
+import Breadcrumb from "@/components/layout/Breadcrumb";
 import TeamPageClient from "./TeamPageClient";
 
 export const metadata: Metadata = {
@@ -26,22 +26,31 @@ export default async function TeamSettingsPage() {
     redirect("/dashboard/settings?error=team_manage_forbidden");
   }
 
-  const [team, cohort, advisorDisplay] = await Promise.all([
+  const [team, cohort] = await Promise.all([
     listTeam(session),
     buildCohortResponse(),
-    getAdvisorDisplay(),
   ]);
 
   return (
-    <QnShell pageTitle="Team" eyebrow="SETTINGS" advisor={advisorDisplay}>
+    <DashboardShell
+      eyebrow="SETTINGS"
+      pageTitle="Team"
+      pageSubtitle="Advisors, roles, and student assignments"
+    >
+      <Breadcrumb
+        items={[
+          { label: "Operation TTG", href: "/" },
+          { label: "Manteca USD", href: "/dashboard" },
+          { label: "Settings", href: "/dashboard/settings" },
+          { label: "Team" },
+        ]}
+      />
       <div
         style={{
           maxWidth: 1280,
           marginLeft: "auto",
           marginRight: "auto",
-          paddingLeft: 32,
-          paddingRight: 32,
-          paddingTop: 24,
+          paddingTop: 8,
           paddingBottom: 28,
         }}
       >
@@ -58,6 +67,6 @@ export default async function TeamSettingsPage() {
           }))}
         />
       </div>
-    </QnShell>
+    </DashboardShell>
   );
 }

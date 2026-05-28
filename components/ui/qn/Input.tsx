@@ -26,20 +26,31 @@ export interface InputProps
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   function Input(
-    { icon: Icon, error, label, mobile, pill, className, id, ...rest },
+    {
+      icon: Icon,
+      error,
+      label,
+      mobile,
+      pill,
+      className,
+      id,
+      style: styleProp,
+      ...rest
+    },
     ref
   ) {
     const reactId = React.useId();
     const inputId = id ?? reactId;
     const errorId = error ? `${inputId}-error` : undefined;
 
+    const iconPad = Icon ? (mobile ? 44 : 40) : 12;
+
     return (
       <div className="flex w-full flex-col gap-1">
         {label ? (
           <label
             htmlFor={inputId}
-            className="text-[11px] font-semibold uppercase tracking-[0.06em]"
-            style={{ color: "var(--color-muted)" }}
+            className="font-sans text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-tertiary)]"
           >
             {label}
           </label>
@@ -47,10 +58,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <div className="relative w-full">
           {Icon ? (
             <span
-              className="pointer-events-none absolute inset-y-0 left-3 flex items-center"
+              className="pointer-events-none absolute inset-y-0 left-3 flex w-5 items-center justify-center"
               aria-hidden
             >
-              <Icon size={16} style={{ color: "var(--color-muted)" }} />
+              <Icon size={16} className="text-[var(--text-quaternary)]" />
             </span>
           ) : null}
           <input
@@ -59,22 +70,23 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-invalid={error ? true : undefined}
             aria-describedby={errorId}
             className={[
-              "block w-full bg-white outline-none transition-colors duration-[120ms]",
-              "placeholder:text-[#9CA3AF]",
-              "border focus:shadow-[0_0_0_3px_var(--color-focus-ring)]",
+              "block w-full bg-[var(--surface-card)] outline-none transition-colors duration-[120ms]",
+              "placeholder:text-[var(--text-quaternary)]",
+              "border focus:shadow-[0_0_0_3px_rgba(92,107,70,0.12)]",
               error
                 ? "border-[var(--color-red)] focus:border-[var(--color-red)] focus:shadow-[0_0_0_3px_rgba(220,38,38,0.15)]"
-                : "border-[var(--color-border)] hover:border-[var(--color-border-hover)] focus:border-[var(--color-green)]",
+                : "border-[var(--border-default)] hover:border-[var(--border-hover)] focus:border-[var(--olive-600)]",
               pill ? "rounded-full" : "rounded-md",
-              "disabled:bg-[#F9FAFB] disabled:text-[var(--color-muted)]",
-              "text-[var(--color-text)]",
+              "disabled:bg-[var(--surface-inner)] disabled:text-[var(--text-tertiary)]",
+              "text-[var(--text-primary)]",
               className ?? "",
             ].join(" ")}
             style={{
               height: mobile ? 44 : 36,
-              paddingLeft: Icon ? 36 : 12,
+              paddingLeft: iconPad,
               paddingRight: 12,
               fontSize: mobile ? 16 : 13,
+              ...styleProp,
             }}
             {...rest}
           />
@@ -82,8 +94,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {error ? (
           <p
             id={errorId}
-            className="text-[12px] leading-4"
-            style={{ color: "var(--color-red)" }}
+            className="text-[12px] leading-4 text-[var(--color-red)]"
           >
             {error}
           </p>

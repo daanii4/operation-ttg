@@ -28,9 +28,9 @@ const COLORS = {
   actual: "#16A34A",
   regression: "#7C3AED",
   ci: "rgba(124, 58, 237, 0.10)",
-  grid: "#E5E7EB",
-  axis: "#6B7280",
-  text: "#111827",
+  grid: "var(--border-default)",
+  axis: "var(--text-tertiary)",
+  text: "var(--text-primary)",
 };
 
 export interface GpaTrajectoryChartProps {
@@ -51,7 +51,7 @@ export default function GpaTrajectoryChart({
         style={{
           width: "100%",
           height: 240,
-          background: "var(--color-row-alt)",
+          background: "var(--surface-inner)",
           borderRadius: 6,
         }}
       />
@@ -117,8 +117,8 @@ export default function GpaTrajectoryChart({
           <Tooltip
             contentStyle={{
               borderRadius: 6,
-              border: "1px solid var(--color-border)",
-              background: "var(--color-bg)",
+              border: "1px solid var(--border-default)",
+              background: "var(--surface-card)",
               fontSize: 12,
               color: COLORS.text,
             }}

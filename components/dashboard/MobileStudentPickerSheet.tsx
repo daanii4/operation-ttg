@@ -13,7 +13,7 @@
 
 import * as React from "react";
 import { Search, X } from "lucide-react";
-import { ActionWindowPill, BandBadge, Input } from "@/components/ui/qn";
+import { ActionWindowPill, BandBadge } from "@/components/ui/qn";
 import type { QnRosterRow } from "@/lib/cohort/qn-roster";
 
 export interface MobileStudentPickerSheetProps {
@@ -65,7 +65,7 @@ export function MobileStudentPickerSheet({
           right: 0,
           bottom: 0,
           top: 0,
-          background: "var(--color-bg)",
+          background: "var(--surface-card)",
           zIndex: 65,
           display: "flex",
           flexDirection: "column",
@@ -75,35 +75,41 @@ export function MobileStudentPickerSheet({
           className="flex items-center justify-between"
           style={{
             padding: "12px 16px",
-            borderBottom: "1px solid var(--color-border)",
+            borderBottom: "1px solid var(--border-default)",
             height: 52,
           }}
         >
-          <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>
+          <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
             Select student
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close picker"
-            className="flex h-11 w-11 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
-            style={{ color: "var(--color-muted)" }}
+            className="flex h-11 w-11 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--olive-600)]"
+            style={{ color: "var(--text-tertiary)" }}
           >
             <X size={18} aria-hidden />
           </button>
         </header>
 
-        <div style={{ padding: "8px 16px", borderBottom: "1px solid var(--color-border)" }}>
-          <Input
-            mobile
-            pill
-            icon={Search}
-            placeholder="Search students"
-            aria-label="Search students"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            autoFocus
-          />
+        <div className="border-b border-[var(--border-default)] px-4 py-2">
+          <div className="relative w-full">
+            <Search
+              size={14}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-quaternary)]"
+              aria-hidden
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search students"
+              aria-label="Search students"
+              autoFocus
+              className="h-11 w-full rounded-full border border-[var(--border-default)] bg-[var(--surface-inner)] pl-9 pr-3 font-sans text-[16px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-quaternary)] focus:border-[var(--olive-600)] focus:bg-[var(--surface-card)] focus:shadow-[0_0_0_3px_rgba(92,107,70,0.12)]"
+            />
+          </div>
         </div>
 
         <ul role="list" className="flex-1 overflow-y-auto">
@@ -117,11 +123,11 @@ export function MobileStudentPickerSheet({
                     onSelect(row.studentId);
                     onClose();
                   }}
-                  className="relative w-full text-left active:bg-[var(--color-row-alt)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-focus)]"
+                  className="relative w-full text-left active:bg-[var(--surface-inner)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--olive-600)]"
                   style={{
                     padding: "14px 16px",
-                    borderBottom: "1px solid var(--color-border)",
-                    background: selected ? "var(--color-green-tint)" : "var(--color-bg)",
+                    borderBottom: "1px solid var(--border-default)",
+                    background: selected ? "var(--color-green-tint)" : "var(--surface-card)",
                   }}
                 >
                   {selected ? (
@@ -144,7 +150,7 @@ export function MobileStudentPickerSheet({
                         fontSize: 15,
                         lineHeight: "20px",
                         fontWeight: 600,
-                        color: selected ? "var(--color-green)" : "var(--color-text)",
+                        color: selected ? "var(--color-green)" : "var(--text-primary)",
                       }}
                     >
                       {row.fullName}
@@ -153,7 +159,7 @@ export function MobileStudentPickerSheet({
                   </div>
                   <div
                     className="mt-1 flex items-center gap-2"
-                    style={{ fontSize: 13, color: "var(--color-muted)" }}
+                    style={{ fontSize: 13, color: "var(--text-tertiary)" }}
                   >
                     <span className="truncate">
                       {row.sport} · Class of {row.graduationYear}

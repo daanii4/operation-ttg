@@ -54,7 +54,7 @@ export function RosterFilterSheet({ open, onClose, filters }: RosterFilterSheetP
           right: 0,
           bottom: 0,
           maxHeight: "80vh",
-          background: "var(--color-bg)",
+          background: "var(--surface-card)",
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
           boxShadow: "var(--shadow-sheet)",
@@ -67,18 +67,18 @@ export function RosterFilterSheet({ open, onClose, filters }: RosterFilterSheetP
           className="flex items-center justify-between"
           style={{
             padding: "12px 16px",
-            borderBottom: "1px solid var(--color-border)",
+            borderBottom: "1px solid var(--border-default)",
           }}
         >
-          <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>
+          <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
             Filter
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close filter sheet"
-            className="flex h-11 w-11 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
-            style={{ color: "var(--color-muted)" }}
+            className="flex h-11 w-11 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--olive-600)]"
+            style={{ color: "var(--text-tertiary)" }}
           >
             <X size={18} aria-hidden />
           </button>
@@ -127,7 +127,7 @@ export function RosterFilterSheet({ open, onClose, filters }: RosterFilterSheetP
         <footer
           style={{
             padding: 16,
-            borderTop: "1px solid var(--color-border)",
+            borderTop: "1px solid var(--border-default)",
             display: "flex",
             flexDirection: "column",
             gap: 8,
@@ -160,7 +160,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
           fontWeight: 600,
           textTransform: "uppercase",
           letterSpacing: "0.06em",
-          color: "var(--color-muted)",
+          color: "var(--text-tertiary)",
           marginBottom: 12,
         }}
       >
@@ -189,13 +189,13 @@ function RadioList({
         return (
           <li key={opt.value}>
             <label
-              className="flex w-full items-center gap-3 rounded-md transition-colors duration-[120ms] active:bg-[var(--color-row-alt)]"
+              className="flex w-full items-center gap-3 rounded-md transition-colors duration-[120ms] active:bg-[var(--surface-inner)]"
               style={{
                 minHeight: 44,
                 paddingLeft: 12,
                 paddingRight: 12,
                 cursor: "pointer",
-                color: "var(--color-text)",
+                color: "var(--text-primary)",
               }}
             >
               <input
@@ -204,7 +204,7 @@ function RadioList({
                 value={opt.value}
                 checked={checked}
                 onChange={() => onChange(opt.value)}
-                className="h-4 w-4 accent-[var(--color-green)]"
+                className="h-4 w-4 accent-[var(--olive-600)]"
               />
               <span style={{ fontSize: 14 }}>{opt.label}</span>
             </label>

@@ -13,6 +13,10 @@
  */
 
 import * as React from "react";
+import {
+  workspaceSectionShell,
+  type WorkspaceSectionVariant,
+} from "@/lib/ui/workspace-section";
 
 export interface SubjectRow {
   key: string;
@@ -31,6 +35,7 @@ export interface CompletionCardProps {
   rows: SubjectRow[];
   /** Right-aligned label after the title (e.g. "F1" or "F3"). */
   source?: string;
+  variant?: WorkspaceSectionVariant;
 }
 
 function deriveTone(row: SubjectRow): "green" | "yellow" | "red" {
@@ -57,34 +62,29 @@ export function CompletionCard({
   subtitle,
   rows,
   source,
+  variant = "card",
 }: CompletionCardProps) {
   return (
     <section
       aria-labelledby={`completion-${title.toLowerCase().replace(/\W+/g, "-")}-heading`}
-      style={{
-        padding: 20,
-        background: "var(--color-bg)",
-        borderRadius: 8,
-        border: "1px solid var(--color-border)",
-      }}
+      style={workspaceSectionShell(variant)}
     >
       <header className="flex items-baseline justify-between">
         <div>
           <h3
             id={`completion-${title.toLowerCase().replace(/\W+/g, "-")}-heading`}
-            className="text-base font-semibold"
-            style={{ color: "var(--color-text)" }}
+            className="font-serif text-[18px] font-normal leading-snug text-[var(--text-primary)]"
           >
             {title}
           </h3>
           {subtitle ? (
-            <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>
+            <p style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2 }}>
               {subtitle}
             </p>
           ) : null}
         </div>
         {source ? (
-          <span style={{ fontSize: 11, color: "var(--color-muted)" }}>{source}</span>
+          <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>{source}</span>
         ) : null}
       </header>
 
@@ -105,7 +105,7 @@ function CompletionRow({ row }: { row: SubjectRow }) {
   return (
     <li>
       <div className="flex items-center justify-between gap-3">
-        <span style={{ fontSize: 13, color: "var(--color-text)" }}>{row.label}</span>
+        <span style={{ fontSize: 13, color: "var(--text-primary)" }}>{row.label}</span>
         <span
           style={{
             fontFamily: "var(--font-mono)",
@@ -134,8 +134,8 @@ function CompletionRow({ row }: { row: SubjectRow }) {
               height: 8,
               borderRadius: 4,
               background:
-                i < filled ? TONE_FILL[tone] : "var(--color-row-alt)",
-              border: i < filled ? "none" : "1px solid var(--color-border)",
+                i < filled ? TONE_FILL[tone] : "var(--surface-inner)",
+              border: i < filled ? "none" : "1px solid var(--border-default)",
               transition: "background 200ms ease-out",
             }}
           />
@@ -145,7 +145,7 @@ function CompletionRow({ row }: { row: SubjectRow }) {
         <p
           style={{
             fontSize: 11,
-            color: "var(--color-muted)",
+            color: "var(--text-tertiary)",
             marginTop: 4,
           }}
         >

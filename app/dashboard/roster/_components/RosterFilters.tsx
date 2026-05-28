@@ -1,99 +1,151 @@
 "use client";
 
 /**
- * QuasarNova v1 — §2.2 Roster filter bar (desktop).
+ * Roster filter toolbar — Scholars OS pattern.
  *
- * Sticky below the top bar (top: 56px), hosts the search input, the four
- * BandBadge-aligned FilterChips, the Sport / Grad-year dropdowns, and the
- * conditional "Clear (n)" ghost button.
+ * Search + band chips + dropdowns sit on the page surface with a bottom rule.
+ * The student table lives in a single Card below (not a second boxed panel).
  */
 
 import * as React from "react";
 import { ChevronDown, Search } from "lucide-react";
-import { Button, FilterChip, Input, type Band } from "@/components/ui/qn";
+import { Button, FilterChip, type Band } from "@/components/ui/qn";
 import type { UseRosterFiltersResult } from "./use-roster-filters";
 
 const BANDS: Band[] = ["GREEN", "YELLOW", "RED", "ESCALATED"];
 
 export interface RosterFiltersProps {
   filters: UseRosterFiltersResult;
+  totalCount: number;
+  filteredCount: number;
+  /** Desktop toolbar action (e.g. Add student). Hidden on mobile — use FAB there. */
+  addStudentAction?: React.ReactNode;
 }
 
-export function RosterFilters({ filters }: RosterFiltersProps) {
+export function RosterFilters({
+  filters,
+  totalCount,
+  filteredCount,
+  addStudentAction,
+}: RosterFiltersProps) {
+  const countLabel =
+    filters.activeFilterCount > 0 || filters.state.search.trim()
+      ? `Showing ${filteredCount} of ${totalCount} students`
+      : `${totalCount} students`;
+
   return (
-    <div
-      className="hidden md:flex md:items-center md:justify-between md:gap-4"
-      style={{
-        position: "sticky",
-        top: 56,
-        zIndex: 10,
-        background: "var(--color-bg)",
-        borderBottom: "1px solid var(--color-border)",
-        paddingTop: 12,
-        paddingBottom: 12,
-        marginBottom: 16,
-      }}
-    >
-      <div className="flex items-center gap-3" style={{ width: 280 }}>
-        <Input
-          aria-label="Search roster"
-          placeholder="Search by student name…"
+    <div className="mb-5 flex flex-col gap-4">
+      <div className="relative w-full min-w-0 md:hidden">
+        <Search
+          size={14}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-quaternary)]"
+          aria-hidden
+        />
+        <input
+          type="search"
           value={filters.state.search}
           onChange={(e) => filters.setSearch(e.target.value)}
-          icon={Search}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") filters.setSearch("");
-          }}
+          placeholder="Search by student name…"
+          aria-label="Search roster"
+          className="h-9 w-full min-w-0 rounded-full border border-[var(--border-default)] bg-[var(--surface-inner)] pl-8 pr-3 font-sans text-[16px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-quaternary)] focus:border-[var(--olive-600)] focus:bg-[var(--surface-card)] focus:shadow-[0_0_0_3px_rgba(92,107,70,0.12)]"
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div role="group" aria-label="Filter by band" className="flex items-center gap-2">
-          {BANDS.map((b) => (
-            <FilterChip
-              key={b}
-              band={b}
-              active={filters.state.bands.has(b)}
-              onToggle={() => filters.toggleBand(b)}
+      <div className="border-b border-[var(--border-default)] pb-4">
+        <div className="hidden md:flex md:flex-wrap md:items-center md:gap-3">
+          <div className="relative w-[280px] shrink-0">
+            <Search
+              size={14}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-quaternary)]"
+              aria-hidden
             />
-          ))}
+            <input
+              type="search"
+              value={filters.state.search}
+              onChange={(e) => filters.setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") filters.setSearch("");
+              }}
+              placeholder="Search by student name…"
+              aria-label="Search roster"
+              className="h-9 w-full rounded-full border border-[var(--border-default)] bg-[var(--surface-inner)] pl-8 pr-3 font-sans text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-quaternary)] transition-[border-color,box-shadow,background-color] hover:border-[var(--border-hover)] focus:border-[var(--olive-600)] focus:bg-[var(--surface-card)] focus:shadow-[0_0_0_3px_rgba(92,107,70,0.12)]"
+            />
+          </div>
+
+          <div
+            role="group"
+            aria-label="Filter by band"
+            className="flex flex-wrap items-center gap-2"
+          >
+            {BANDS.map((b) => (
+              <FilterChip
+                key={b}
+                band={b}
+                active={filters.state.bands.has(b)}
+                onToggle={() => filters.toggleBand(b)}
+              />
+            ))}
+          </div>
+
+          <DropdownSelect
+            label="Sport"
+            value={filters.state.sport}
+            options={[
+              { value: "ALL", label: "All sports" },
+              ...filters.sports.map((s) => ({ value: s, label: s })),
+            ]}
+            onChange={filters.setSport}
+          />
+
+          <DropdownSelect
+            label="Grad year"
+            value={filters.state.gradYear}
+            options={[
+              { value: "ALL", label: "All grad years" },
+              ...filters.gradYears.map((y) => ({ value: String(y), label: String(y) })),
+            ]}
+            onChange={filters.setGradYear}
+          />
+
+          {filters.activeFilterCount > 0 ? (
+            <Button variant="ghost" onClick={filters.clearAll}>
+              Clear ({filters.activeFilterCount})
+            </Button>
+          ) : null}
+
+          {addStudentAction ? (
+            <div className="ml-auto hidden shrink-0 md:flex">{addStudentAction}</div>
+          ) : null}
         </div>
 
-        <DropdownSelect
-          label="Sport"
-          value={filters.state.sport}
-          options={[
-            { value: "ALL", label: "All sports" },
-            ...filters.sports.map((s) => ({ value: s, label: s })),
-          ]}
-          onChange={filters.setSport}
-        />
+        <div className="flex flex-wrap items-center gap-2 md:hidden">
+          <div
+            role="group"
+            aria-label="Filter by band"
+            className="flex flex-wrap items-center gap-2"
+          >
+            {BANDS.map((b) => (
+              <FilterChip
+                key={b}
+                band={b}
+                active={filters.state.bands.has(b)}
+                onToggle={() => filters.toggleBand(b)}
+              />
+            ))}
+          </div>
+        </div>
 
-        <DropdownSelect
-          label="Grad year"
-          value={filters.state.gradYear}
-          options={[
-            { value: "ALL", label: "All grad years" },
-            ...filters.gradYears.map((y) => ({ value: String(y), label: String(y) })),
-          ]}
-          onChange={filters.setGradYear}
-        />
-
-        {filters.activeFilterCount > 0 ? (
-          <Button variant="ghost" onClick={filters.clearAll}>
-            Clear ({filters.activeFilterCount})
-          </Button>
-        ) : null}
+        <p
+          className="mt-3 font-sans text-[12px] leading-snug text-[var(--text-tertiary)]"
+          aria-live="polite"
+        >
+          {countLabel}
+        </p>
       </div>
     </div>
   );
 }
 
-/**
- * Lightweight outline-styled select. Wraps a native <select> for accessibility
- * (keyboard / screen-reader behavior is free) but adds the v1 chrome via the
- * label-on-button + caret affordance.
- */
 function DropdownSelect({
   label,
   value,
@@ -112,14 +164,8 @@ function DropdownSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none rounded-md border bg-white pr-8 text-[13px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
-        style={{
-          height: 36,
-          paddingLeft: 12,
-          paddingRight: 32,
-          borderColor: "var(--color-border)",
-          color: "var(--color-text)",
-        }}
+        className="appearance-none rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] pr-8 font-sans text-[13px] text-[var(--text-primary)] outline-none transition-colors hover:border-[var(--border-hover)] focus-visible:border-[var(--olive-600)] focus-visible:shadow-[0_0_0_3px_rgba(92,107,70,0.12)]"
+        style={{ height: 36, paddingLeft: 12, paddingRight: 32 }}
         aria-label={label}
       >
         {options.map((opt) => (
@@ -131,13 +177,10 @@ function DropdownSelect({
       <ChevronDown
         size={16}
         aria-hidden
-        style={{
-          position: "absolute",
-          right: 8,
-          color: "var(--color-muted)",
-          pointerEvents: "none",
-        }}
+        className="pointer-events-none absolute right-2 text-[var(--text-tertiary)]"
       />
     </label>
   );
 }
+
+export default RosterFilters;

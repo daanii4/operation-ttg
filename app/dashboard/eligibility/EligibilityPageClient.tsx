@@ -15,7 +15,7 @@
 import * as React from "react";
 import { AlertCircle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/qn";
-import StudentSelectorPanel from "@/components/dashboard/StudentSelectorPanel";
+import StudentWorkspaceLayout from "@/components/dashboard/StudentWorkspaceLayout";
 import MobileStudentSelector from "@/components/dashboard/MobileStudentSelector";
 import MobileStudentPickerSheet from "@/components/dashboard/MobileStudentPickerSheet";
 import { useBriefingData } from "@/app/dashboard/briefings/_components/use-briefing-data";
@@ -59,26 +59,15 @@ export default function EligibilityPageClient({ rows }: EligibilityPageClientPro
   return (
     <>
       {/* ============================ Desktop ============================ */}
-      <div className="hidden md:flex md:items-stretch">
-        <StudentSelectorPanel
-          rows={rows}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          title="Eligibility"
-          hideBand
-        />
-        <div
-          className="flex-1"
-          style={{
-            paddingLeft: 24,
-            paddingRight: 32,
-            paddingTop: 24,
-            paddingBottom: 28,
-          }}
-        >
-          <EligibilityBody selected={selected} briefing={briefing} desktop />
-        </div>
-      </div>
+      <StudentWorkspaceLayout
+        rows={rows}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        listTitle="Eligibility"
+        hideBand
+      >
+        <EligibilityBody selected={selected} briefing={briefing} desktop embedded />
+      </StudentWorkspaceLayout>
 
       {/* ============================ Mobile ============================= */}
       <div className="md:hidden">
@@ -107,10 +96,12 @@ function EligibilityBody({
   selected,
   briefing,
   desktop,
+  embedded = false,
 }: {
   selected: QnRosterRow | null;
   briefing: ReturnType<typeof useBriefingData>;
   desktop: boolean;
+  embedded?: boolean;
 }) {
   if (!selected) return <NoSelection />;
   if (briefing.status === "loading") return <Loading desktop={desktop} />;
@@ -139,6 +130,38 @@ function EligibilityBody({
   const agRows = agRowsFromF1(bundle.f1 ?? null);
   const d1Rows = ncaaRowsFromF3(bundle.f3 ?? null);
   const d2Rows = ncaaRowsFromF6(bundle.f6 ?? null);
+
+  const cellVariant = embedded ? ("embeddedCell" as const) : ("card" as const);
+
+  if (embedded) {
+    return (
+      <>
+        <div className="grid md:grid-cols-2 md:divide-x md:divide-[var(--border-default)]">
+          <CompletionCard
+            variant={cellVariant}
+            title="California A-G"
+            subtitle="UC / CSU subject area completion"
+            rows={agRows}
+            source="F1"
+          />
+          <NcaaSection
+            embedded
+            d1Rows={divisions.d1 ? d1Rows : []}
+            d2Rows={divisions.d2 ? d2Rows : []}
+          />
+        </div>
+        <div className="border-t border-[var(--border-default)]">
+          <GpaQualifierRow
+            variant="embeddedCell"
+            f4={bundle.f4}
+            f7={bundle.f7}
+            showD1={divisions.d1}
+            showD2={divisions.d2}
+          />
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -173,13 +196,18 @@ function EligibilityBody({
 function NcaaSection({
   d1Rows,
   d2Rows,
+  embedded = false,
 }: {
   d1Rows: ReturnType<typeof ncaaRowsFromF3>;
   d2Rows: ReturnType<typeof ncaaRowsFromF6>;
+  embedded?: boolean;
 }) {
+  const variant = embedded ? ("embeddedCell" as const) : ("card" as const);
+
   if (d1Rows.length === 0 && d2Rows.length === 0) {
     return (
       <CompletionCard
+        variant={variant}
         title="NCAA Core"
         subtitle="No NCAA division intent recorded"
         rows={[]}
@@ -189,14 +217,16 @@ function NcaaSection({
   }
   if (d1Rows.length > 0 && d2Rows.length > 0) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className={embedded ? "flex flex-col divide-y divide-[var(--border-default)]" : "flex flex-col gap-4"}>
         <CompletionCard
+          variant={variant}
           title="NCAA D1 Core"
           subtitle="Division I core course completion"
           rows={d1Rows}
           source="F3"
         />
         <CompletionCard
+          variant={variant}
           title="NCAA D2 Core"
           subtitle="Division II core course completion"
           rows={d2Rows}
@@ -208,6 +238,7 @@ function NcaaSection({
   if (d1Rows.length > 0) {
     return (
       <CompletionCard
+        variant={variant}
         title="NCAA D1 Core"
         subtitle="Division I core course completion"
         rows={d1Rows}
@@ -217,6 +248,7 @@ function NcaaSection({
   }
   return (
     <CompletionCard
+      variant={variant}
       title="NCAA D2 Core"
       subtitle="Division II core course completion"
       rows={d2Rows}
@@ -233,10 +265,10 @@ function Loading({ desktop }: { desktop: boolean }) {
           desktop ? "grid items-start gap-4 md:grid-cols-2" : "flex flex-col gap-4"
         }
       >
-        <div className="qn-skeleton" style={{ width: "100%", height: 320, borderRadius: 8 }} />
-        <div className="qn-skeleton" style={{ width: "100%", height: 320, borderRadius: 8 }} />
+        <div className="animate-pulse rounded-md bg-[var(--surface-inner)]" style={{ width: "100%", height: 320, borderRadius: "var(--radius-default)" }} />
+        <div className="animate-pulse rounded-md bg-[var(--surface-inner)]" style={{ width: "100%", height: 320, borderRadius: "var(--radius-default)" }} />
       </div>
-      <div className="qn-skeleton" style={{ width: "100%", height: 140, borderRadius: 8 }} />
+      <div className="animate-pulse rounded-md bg-[var(--surface-inner)]" style={{ width: "100%", height: 140, borderRadius: "var(--radius-default)" }} />
     </div>
   );
 }
@@ -263,7 +295,7 @@ function ErrorState({
         <div>
           <p
             className="text-base font-semibold"
-            style={{ color: "var(--color-text)" }}
+            style={{ color: "var(--text-primary)" }}
           >
             Couldn't load eligibility
           </p>
@@ -288,12 +320,12 @@ function NoSelection() {
       style={{
         textAlign: "center",
         padding: 48,
-        color: "var(--color-muted)",
+        color: "var(--text-tertiary)",
       }}
     >
       <p
         className="text-base font-semibold"
-        style={{ color: "var(--color-text)" }}
+        style={{ color: "var(--text-primary)" }}
       >
         Select a student
       </p>
@@ -311,10 +343,10 @@ function NoData() {
       style={{
         textAlign: "center",
         padding: 48,
-        color: "var(--color-muted)",
+        color: "var(--text-tertiary)",
       }}
     >
-      <p className="text-base font-semibold" style={{ color: "var(--color-text)" }}>
+      <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
         No eligibility data yet
       </p>
       <p style={{ marginTop: 4, fontSize: 13 }}>

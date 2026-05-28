@@ -41,8 +41,8 @@ export function BriefingStudentList({
       style={{
         width: 320,
         flexShrink: 0,
-        background: "var(--color-bg)",
-        borderRight: "1px solid var(--color-border)",
+        background: "var(--surface-card)",
+        borderRight: "1px solid var(--border-default)",
         // Account for the 56px desktop top bar so the list scrolls within
         // its own column without pushing the page.
         height: "calc(100vh - 56px)",
@@ -53,17 +53,17 @@ export function BriefingStudentList({
       <div
         style={{
           padding: 16,
-          borderBottom: "1px solid var(--color-border)",
+          borderBottom: "1px solid var(--border-default)",
         }}
       >
         <div className="flex items-baseline justify-between">
           <h2
             className="text-sm font-semibold"
-            style={{ color: "var(--color-text)" }}
+            style={{ color: "var(--text-primary)" }}
           >
             Students
           </h2>
-          <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
+          <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
             {filtered.length}
           </span>
         </div>
@@ -74,7 +74,6 @@ export function BriefingStudentList({
             icon={Search}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            style={{ height: 32 }}
           />
         </div>
       </div>
@@ -88,11 +87,11 @@ export function BriefingStudentList({
                 type="button"
                 onClick={() => onSelect(row.studentId)}
                 aria-current={selected ? "true" : undefined}
-                className="qn-briefing-row relative w-full text-left transition-colors duration-[120ms] ease-out hover:bg-[var(--color-row-alt)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-focus)]"
+                className="qn-briefing-row relative w-full text-left transition-colors duration-[120ms] ease-out hover:bg-[var(--surface-inner)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--olive-600)]"
                 style={{
                   padding: "12px 16px",
-                  borderBottom: "1px solid var(--color-border)",
-                  background: selected ? "var(--color-green-tint)" : "var(--color-bg)",
+                  borderBottom: "1px solid var(--border-default)",
+                  background: selected ? "var(--color-green-tint)" : "var(--surface-card)",
                 }}
               >
                 {selected ? (
@@ -111,7 +110,7 @@ export function BriefingStudentList({
                 <div className="flex items-center justify-between gap-3">
                   <span
                     className="truncate text-[13px] font-semibold leading-5"
-                    style={{ color: selected ? "var(--color-green)" : "var(--color-text)" }}
+                    style={{ color: selected ? "var(--color-green)" : "var(--text-primary)" }}
                   >
                     {row.fullName}
                   </span>
@@ -119,7 +118,7 @@ export function BriefingStudentList({
                 </div>
                 <div
                   className="mt-1 flex items-center gap-2"
-                  style={{ fontSize: 12, color: "var(--color-muted)" }}
+                  style={{ fontSize: 12, color: "var(--text-tertiary)" }}
                 >
                   <span className="truncate">
                     {row.sport} · {row.graduationYear}

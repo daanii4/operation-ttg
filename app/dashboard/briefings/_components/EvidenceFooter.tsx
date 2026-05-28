@@ -35,14 +35,14 @@ export function EvidenceFooter({ payload, computedAt }: EvidenceFooterProps) {
       className="flex flex-wrap items-center justify-between gap-2"
       style={{
         padding: "16px 28px",
-        background: "var(--color-row-alt)",
+        background: "var(--surface-inner)",
       }}
     >
       <EvidenceTierChip tier={tier} />
       <p
         style={{
           fontSize: 12,
-          color: "var(--color-muted)",
+          color: "var(--text-tertiary)",
         }}
       >
         Last refreshed {computedAt ? formatRelative(computedAt) : "—"} · Briefing v{briefingVersion}

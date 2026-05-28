@@ -16,6 +16,10 @@
 
 import * as React from "react";
 import { mlRiskTierLabel } from "@/lib/calculations/display-labels";
+import {
+  workspaceSectionShell,
+  type WorkspaceSectionVariant,
+} from "@/lib/ui/workspace-section";
 
 interface MlScore {
   score: number;
@@ -34,28 +38,23 @@ const TONE: Record<MlScore["risk_tier"], { fg: string; bg: string }> = {
 
 export interface RiskForecastCardProps {
   ml: MlScore | null | undefined;
+  variant?: WorkspaceSectionVariant;
 }
 
-export function RiskForecastCard({ ml }: RiskForecastCardProps) {
+export function RiskForecastCard({ ml, variant = "card" }: RiskForecastCardProps) {
   return (
     <section
       aria-labelledby="risk-forecast-heading"
-      style={{
-        padding: 20,
-        background: "var(--color-bg)",
-        borderRadius: 8,
-        border: "1px solid var(--color-border)",
-      }}
+      style={workspaceSectionShell(variant)}
     >
       <header className="flex items-baseline justify-between">
         <h3
           id="risk-forecast-heading"
-          className="text-base font-semibold"
-          style={{ color: "var(--color-text)" }}
+          className="font-serif text-[18px] font-normal leading-snug text-[var(--text-primary)]"
         >
           Risk Forecast
         </h3>
-        <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
+        <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
           {ml ? `Model: ${ml.model_version}` : "Model: logistic-v0.1"}
         </span>
       </header>
@@ -111,7 +110,7 @@ function ScoreView({ ml }: { ml: MlScore }) {
 
       <div
         className="mt-1 flex items-baseline justify-between"
-        style={{ fontSize: 11, color: "var(--color-muted)" }}
+        style={{ fontSize: 11, color: "var(--text-tertiary)" }}
       >
         <span>
           95% CI: {lowerPct}% – {upperPct}%
@@ -157,7 +156,7 @@ function CiBar({
         position: "relative",
         height: 10,
         borderRadius: 5,
-        background: "var(--color-row-alt)",
+        background: "var(--surface-inner)",
       }}
     >
       <span
@@ -195,10 +194,10 @@ function EmptyView() {
       style={{
         marginTop: 12,
         padding: "16px 12px",
-        background: "var(--color-row-alt)",
+        background: "var(--surface-inner)",
         borderRadius: 6,
         fontSize: 13,
-        color: "var(--color-muted)",
+        color: "var(--text-tertiary)",
         textAlign: "center",
       }}
     >

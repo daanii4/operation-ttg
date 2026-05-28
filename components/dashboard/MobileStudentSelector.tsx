@@ -34,10 +34,10 @@ export function MobileStudentSelector({
       className="md:hidden flex items-center justify-between"
       style={{
         height: 56,
-        background: "var(--color-bg)",
-        borderBottom: "1px solid var(--color-border)",
+        background: "var(--surface-card)",
+        borderBottom: "1px solid var(--border-default)",
         position: "sticky",
-        top: 52,
+        top: 76,
         zIndex: 15,
       }}
     >
@@ -46,8 +46,8 @@ export function MobileStudentSelector({
         aria-label="Previous student"
         disabled={!prev}
         onClick={() => prev && onSelect(prev.studentId)}
-        className="flex h-11 w-11 items-center justify-center disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-focus)]"
-        style={{ color: "var(--color-text)" }}
+        className="flex h-11 w-11 items-center justify-center disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--olive-600)]"
+        style={{ color: "var(--text-primary)" }}
       >
         <ChevronLeft size={20} aria-hidden />
       </button>
@@ -56,7 +56,7 @@ export function MobileStudentSelector({
         type="button"
         onClick={onOpenPicker}
         aria-haspopup="dialog"
-        className="flex flex-1 flex-col items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-focus)]"
+        className="flex flex-1 flex-col items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--olive-600)]"
         style={{ height: "100%" }}
       >
         <span
@@ -65,14 +65,14 @@ export function MobileStudentSelector({
             fontSize: 15,
             lineHeight: "20px",
             fontWeight: 600,
-            color: "var(--color-text)",
+            color: "var(--text-primary)",
             maxWidth: "60vw",
           }}
         >
           {selected?.fullName ?? "Select student"}
         </span>
         {selected ? (
-          <span style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>
+          <span style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2 }}>
             {selected.sport} · Class of {selected.graduationYear}
           </span>
         ) : null}
@@ -83,8 +83,8 @@ export function MobileStudentSelector({
         aria-label="Next student"
         disabled={!next}
         onClick={() => next && onSelect(next.studentId)}
-        className="flex h-11 w-11 items-center justify-center disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-focus)]"
-        style={{ color: "var(--color-text)" }}
+        className="flex h-11 w-11 items-center justify-center disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--olive-600)]"
+        style={{ color: "var(--text-primary)" }}
       >
         <ChevronRight size={20} aria-hidden />
       </button>

@@ -17,7 +17,7 @@
 import * as React from "react";
 import { Loader2, type LucideIcon } from "lucide-react";
 
-export type ButtonVariant = "primary" | "outline" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "gold" | "outline" | "ghost" | "danger";
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -35,15 +35,18 @@ export interface ButtonProps
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
     "qn-btn-primary text-white border border-transparent " +
-    "bg-[var(--color-green)] hover:bg-[#15803D] active:bg-[#166534]",
+    "bg-[var(--olive-600)] hover:bg-[var(--olive-700)] active:bg-[var(--olive-800)]",
+  gold:
+    "qn-btn-gold border border-transparent text-[#1e2b12] " +
+    "bg-[var(--gold-500)] hover:bg-[#c4911e] active:scale-[0.98]",
   outline:
-    "qn-btn-outline border bg-white text-[var(--color-text)] " +
-    "border-[var(--color-border)] hover:bg-[var(--color-row-alt)] active:bg-[#F3F4F6]",
+    "qn-btn-outline border bg-[var(--surface-card)] text-[var(--text-primary)] " +
+    "border-[var(--border-default)] hover:bg-[var(--surface-inner)] active:bg-[var(--surface-inner)]",
   ghost:
-    "qn-btn-ghost border border-transparent bg-transparent text-[var(--color-text)] " +
-    "hover:bg-[var(--color-row-alt)] active:bg-[#F3F4F6]",
+    "qn-btn-ghost border border-transparent bg-transparent text-[var(--text-primary)] " +
+    "hover:bg-[var(--surface-inner)] active:bg-[var(--surface-inner)]",
   danger:
-    "qn-btn-danger border bg-white text-[var(--color-red)] " +
+    "qn-btn-danger border bg-[var(--surface-card)] text-[var(--color-red)] " +
     "border-[var(--color-red)] hover:bg-[var(--color-red-tint)] active:bg-[#FEE2E2]",
 };
 
@@ -77,7 +80,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           "text-[13px] font-medium leading-none",
           "transition-colors duration-[120ms] ease-out",
           "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
-          "focus-visible:outline-[var(--color-focus)]",
+          "focus-visible:outline-[var(--olive-600)]",
           "disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none",
           fullWidth ? "w-full" : "",
           VARIANT_CLASSES[variant],
