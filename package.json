@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
-    "seed:districts": "tsx scripts/seed-districts.ts"
+    "seed:districts": "tsx scripts/seed-districts.ts",
+    "seed:thresholds": "tsx prisma/seed/thresholds.ts"
   },
   "engines": {
     "node": ">=18.17.0"

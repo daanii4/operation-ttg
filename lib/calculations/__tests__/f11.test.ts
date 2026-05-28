@@ -17,7 +17,7 @@ describe("F11 — Engagement Metrics", () => {
       },
     ];
 
-    const result = calcEngagementMetrics(observations, new Date("2026-05-20"));
+    const result = calcEngagementMetrics(observations, {}, new Date("2026-05-20"));
     expect(result.evidence_tier).toBe("Insufficient");
     expect(result.insufficient_reason).toBe("below_minimum_observations");
     expect(result.trend).toBe("insufficient");
@@ -52,7 +52,7 @@ describe("F11 — Engagement Metrics", () => {
       },
     ];
 
-    const result = calcEngagementMetrics(observations, new Date("2026-05-20"));
+    const result = calcEngagementMetrics(observations, {}, new Date("2026-05-20"));
     expect(result.withdrawal_flag).toBe(true);
     expect(result.consecutive_absences).toBe(3);
   });
@@ -85,7 +85,7 @@ describe("F11 — Engagement Metrics", () => {
       },
     ];
 
-    const result = calcEngagementMetrics(observations, new Date("2026-05-20"));
+    const result = calcEngagementMetrics(observations, {}, new Date("2026-05-20"));
     expect(result.low_engagement_flag).toBe(true);
     expect(result.window_avg).toBeLessThan(0.4);
   });

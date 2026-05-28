@@ -20,6 +20,7 @@ import { useBriefingData } from "@/app/dashboard/briefings/_components/use-brief
 import GpaTrajectoryCard from "./_components/GpaTrajectoryCard";
 import AimsSignalCard from "./_components/AimsSignalCard";
 import EngagementCard from "./_components/EngagementCard";
+import RiskForecastCard from "./_components/RiskForecastCard";
 
 export interface TrajectoryPageClientProps {
   rows: QnRosterRow[];
@@ -105,6 +106,7 @@ function TrajectoryBody({
       />
       <AimsSignalCard f10={briefing.data.f10} />
       <EngagementCard f11={briefing.data.f11} />
+      <RiskForecastCard ml={briefing.data.ml} />
     </div>
   );
 }

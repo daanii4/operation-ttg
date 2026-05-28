@@ -116,3 +116,18 @@ export function engagementTrendLabel(trend: EngagementTrend | null | undefined) 
 export function evidenceTierLabel(tier: EvidenceTier | string | null | undefined) {
   return displayLabel(EVIDENCE_TIER_LABELS, tier ?? null);
 }
+
+
+/* -------------------------------------------------------------------------- */
+/* Sprint 7 / Workstream ML — Risk forecast labels.                            */
+/* -------------------------------------------------------------------------- */
+
+export const ML_RISK_TIER_LABELS: Record<string, string> = {
+  high: "High probability of eligibility risk",
+  moderate: "Moderate probability — monitor closely",
+  low: "Low probability — on track",
+};
+
+export function mlRiskTierLabel(tier: string | null | undefined): string {
+  return displayLabel(ML_RISK_TIER_LABELS, tier ?? null);
+}

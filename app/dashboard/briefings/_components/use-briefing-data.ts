@@ -23,12 +23,23 @@ export interface BriefingObservations {
   }>;
 }
 
+export interface BriefingMlScore {
+  score: number;
+  confidence_lower: number;
+  confidence_upper: number;
+  risk_tier: "low" | "moderate" | "high";
+  model_version: string;
+  computed_at: string;
+}
+
 export interface BriefingPayload {
   f8?: F8Result;
   f9?: F9Result;
   f10?: F10Result;
   f11?: F11Result;
   f12?: F12Result;
+  /** Sprint 7 / Workstream ML — advisory risk forecast (null until computed). */
+  ml?: BriefingMlScore | null;
   computedAt?: string;
   observations?: BriefingObservations;
 }
