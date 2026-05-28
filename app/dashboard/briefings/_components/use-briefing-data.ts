@@ -11,6 +11,18 @@ import type {
   InterventionCode,
 } from "@/lib/calculations/types";
 
+export interface BriefingObservations {
+  grades: Array<{ observed_grade: string; observed_at: string }>;
+  engagement: Array<{ observed_at: string; engagement_type: string; value: number }>;
+  aims: Array<{
+    administered_at: string;
+    social_identity_score: number;
+    exclusivity_score: number;
+    negative_affectivity_score: number;
+    aims_version: string;
+  }>;
+}
+
 export interface BriefingPayload {
   f8?: F8Result;
   f9?: F9Result;
@@ -18,6 +30,7 @@ export interface BriefingPayload {
   f11?: F11Result;
   f12?: F12Result;
   computedAt?: string;
+  observations?: BriefingObservations;
 }
 
 export type BriefingStatus = "idle" | "loading" | "ready" | "error" | "empty";

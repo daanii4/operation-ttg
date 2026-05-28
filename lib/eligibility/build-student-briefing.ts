@@ -54,6 +54,18 @@ export interface StudentBriefingRecord {
   computedAt: string;
   /** F5 lock-in date — useful for PDF rendering. */
   lockInDate: Date | null;
+  /** Sprint 6 — observation slices used by the Trajectory tab charts. */
+  observations: {
+    grades: Array<{ observed_grade: string; observed_at: string }>;
+    engagement: Array<{ observed_at: string; engagement_type: string; value: number }>;
+    aims: Array<{
+      administered_at: string;
+      social_identity_score: number;
+      exclusivity_score: number;
+      negative_affectivity_score: number;
+      aims_version: string;
+    }>;
+  };
 }
 
 export type StudentBriefingResult =
@@ -198,6 +210,24 @@ export async function buildStudentBriefing(
       f12,
       computedAt: referenceDate.toISOString(),
       lockInDate: f5.lockInDate ?? null,
+      observations: {
+        grades: gradeUpdates.map((row) => ({
+          observed_grade: row.observed_grade,
+          observed_at: row.observed_at.toISOString(),
+        })),
+        engagement: engagementObs.map((row) => ({
+          observed_at: row.observed_at.toISOString(),
+          engagement_type: row.engagement_type,
+          value: row.value,
+        })),
+        aims: aimsAssessments.map((row) => ({
+          administered_at: row.administered_at.toISOString(),
+          social_identity_score: row.social_identity_score,
+          exclusivity_score: row.exclusivity_score,
+          negative_affectivity_score: row.negative_affectivity_score,
+          aims_version: row.aims_version,
+        })),
+      },
     },
   };
 }

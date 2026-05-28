@@ -17,6 +17,12 @@ import { BandBadge, type Band } from "@/components/ui/qn";
 import type {
   BriefingPayload,
 } from "./use-briefing-data";
+import {
+  aimsFlagLabel,
+  aimsRiskLabel,
+  engagementTrendLabel,
+  trajectoryDirectionLabel,
+} from "@/lib/calculations/display-labels";
 
 interface LayerRow {
   layer: string;
@@ -68,7 +74,9 @@ function gpaRow(p: BriefingPayload): LayerRow {
     layer: "GPA Trajectory",
     band,
     signal: `${sign}${slope}`,
-    notes: p.f9.regression_flag ? "Regression flagged" : `Direction ${dir.replace("_", " ")}`,
+    notes: p.f9.regression_flag
+      ? "Regression flagged"
+      : `Direction · ${trajectoryDirectionLabel(p.f9.direction)}`,
   };
 }
 
@@ -95,8 +103,8 @@ function aimsRow(p: BriefingPayload): LayerRow {
     signal: score,
     notes:
       p.f10.cross_layer_flags.length > 0
-        ? p.f10.cross_layer_flags.join(", ").replace(/_/g, " ")
-        : `Risk ${p.f10.risk_band}`,
+        ? p.f10.cross_layer_flags.map(aimsFlagLabel).join(" · ")
+        : aimsRiskLabel(p.f10.risk_band),
   };
 }
 
@@ -122,7 +130,7 @@ function engagementRow(p: BriefingPayload): LayerRow {
     signal: avg,
     notes: p.f11.withdrawal_flag
       ? `Withdrawal · ${p.f11.consecutive_absences} absences`
-      : `Trend ${p.f11.trend}`,
+      : `Trend · ${engagementTrendLabel(p.f11.trend)}`,
   };
 }
 

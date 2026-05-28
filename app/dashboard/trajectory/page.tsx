@@ -1,46 +1,25 @@
 import type { Metadata } from "next";
 import { buildCohortResponse } from "@/lib/cohort/build-cohort-response";
-import DashboardShell from "@/components/layout/DashboardShell";
-import TtgHeaderActions from "@/components/layout/TtgHeaderActions";
-import Breadcrumb from "@/components/layout/Breadcrumb";
-import TrajectoryClient from "./TrajectoryClient";
+import { sortQnRosterRows, toQnRosterRows } from "@/lib/cohort/qn-roster";
+import { getAdvisorDisplay } from "@/lib/auth/advisor-identity";
+import QnShell from "@/components/layout/qn/QnShell";
+import TrajectoryPageClient from "./TrajectoryPageClient";
 
 export const metadata: Metadata = {
   title: "Trajectory · Operation TTG",
 };
 
 export default async function TrajectoryPage() {
-  const data = await buildCohortResponse();
+  const [data, advisor] = await Promise.all([
+    buildCohortResponse(),
+    getAdvisorDisplay(),
+  ]);
+
+  const rows = sortQnRosterRows(toQnRosterRows(data.students));
 
   return (
-    <DashboardShell
-      eyebrow="TRAJECTORY"
-      pageTitle="Trends & Signals"
-      pageSubtitle="F9 GPA trajectory · F10 AIMS risk · F11 engagement metrics"
-      headerActions={<TtgHeaderActions />}
-    >
-      <Breadcrumb
-        items={[
-          { label: "Operation TTG", href: "/" },
-          { label: "Manteca USD", href: "/dashboard" },
-          { label: "Trajectory" },
-        ]}
-      />
-      <TrajectoryClient
-        students={data.students.map((s) => ({
-          studentId: s.studentId,
-          firstName: s.firstName,
-          lastName: s.lastName,
-          grade: s.grade,
-          sport: s.sport,
-          targetDivision: s.targetDivision,
-          riskBand: s.riskBand,
-          overallRisk: s.overallRisk,
-          gpaTrajectory: s.gpaTrajectory,
-          aimsRisk: s.aimsRisk,
-          aimsReason: s.aimsReason,
-        }))}
-      />
-    </DashboardShell>
+    <QnShell pageTitle="Trajectory" advisor={advisor}>
+      <TrajectoryPageClient rows={rows} />
+    </QnShell>
   );
 }

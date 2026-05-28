@@ -11,6 +11,8 @@ export interface AdvisorDisplay {
   name: string;
   email?: string;
   initials: string;
+  /** Sprint 6 — surfaces the team role so the shell can gate the Team sub-nav. */
+  teamRole?: "owner" | "advisor" | "viewer";
 }
 
 function deriveInitials(input: string | null | undefined): string {
@@ -33,9 +35,13 @@ export async function getAdvisorDisplay(): Promise<AdvisorDisplay | null> {
   const session = await getTtgSession();
   if (!session || session.userId === "anonymous") return null;
   const display = session.name ?? session.email ?? "Advisor";
+  // Lazy import to avoid a circular dep between session.ts <-> advisor-profile.ts.
+  const { ensureAdvisorProfile } = await import("./advisor-profile");
+  const profile = await ensureAdvisorProfile(session).catch(() => null);
   return {
     name: display,
     email: session.email,
     initials: deriveInitials(session.name ?? session.email),
+    teamRole: profile?.teamRole,
   };
 }

@@ -21,6 +21,8 @@ import { MUSD_COHORT_DEADLINES } from "@/lib/seed/deadlines";
 import { computeAllDemoResults, DEMO_TODAY, STUDENT_NAMES } from "@/lib/seed/demo-data";
 import { getHolisticProfile, type AimsRisk, type FrameworkBand, type GpaTrajectory } from "@/lib/seed/holistic-data";
 import { getTtgSession } from "@/lib/auth/session";
+import { ensureAdvisorProfile } from "@/lib/auth/advisor-profile";
+import { getStudentScope } from "@/lib/auth/student-scope";
 
 type DemoResult = ReturnType<typeof computeAllDemoResults>[number];
 
@@ -112,10 +114,19 @@ function mapHighSchoolToCalendar(highSchool: HighSchool | null): F5SchoolCalenda
 
 async function getDbCohortResults(): Promise<CohortResultRow[]> {
   const session = await getTtgSession();
-  const where =
-    session && session.userId !== "anonymous" && session.role === "ADVISOR"
-      ? { advisorId: session.userId }
-      : undefined;
+
+  // Multi-advisor scoping (Sprint 6 / Workstream C):
+  //   • owner  / viewer → see the full cohort.
+  //   • advisor          → only their assigned students (empty when none).
+  // For anonymous / unrecognised sessions we fall back to the legacy
+  // single-advisor behaviour so existing demo flows stay green.
+  let where: Record<string, unknown> | undefined;
+  if (session && session.userId !== "anonymous") {
+    const profile = await ensureAdvisorProfile(session).catch(() => null);
+    where = await getStudentScope(session.userId, profile?.teamRole ?? null).catch(
+      () => ({ advisorId: session.userId })
+    );
+  }
 
   const dbStudents = await prismaTtg.studentAthlete.findMany({
     where,

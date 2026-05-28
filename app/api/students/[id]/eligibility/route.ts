@@ -28,6 +28,7 @@ export async function GET(
       f11: record.f11,
       f12: record.f12,
       computedAt: record.computedAt,
+      observations: record.observations,
     });
   } catch (err) {
     console.error(err);

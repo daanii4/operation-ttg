@@ -53,6 +53,20 @@ enum UserRole {
   @@schema("ttg")
 }
 
+/// Sprint 6 / Workstream C — multi-advisor team roles.
+///
+/// Layered over the legacy UserRole so existing single-advisor sessions stay
+/// valid. The team role lives on AdvisorProfile (keyed by Supabase user id)
+/// rather than on User because the production session identity is the
+/// Supabase UUID, not the NextAuth User row.
+enum AdvisorRole {
+  owner
+  advisor
+  viewer
+
+  @@schema("ttg")
+}
+
 enum NcaaChecklistItemKey {
   account_created
   ncaa_id_obtained
@@ -82,16 +96,16 @@ model User {
 // ─── D2: DISTRICT ────────────────────────────────────────────────────────────
 
 model District {
-  id               String       @id @default(cuid())
+  id               String    @id @default(cuid())
   districtName     String
-  state            String       @default("CA")
+  state            String    @default("CA")
   /// UC A-G CMP district-level institution ID — enables one-pull multi-school A-G import
   ucDistrictId     String?
   lastVerifiedDate DateTime?
   sourceUrl        String?
-  createdAt        DateTime     @default(now())
+  createdAt        DateTime  @default(now())
 
-  schools          HighSchool[]
+  schools HighSchool[]
 
   @@schema("ttg")
 }
@@ -99,24 +113,24 @@ model District {
 // ─── D2: HIGH SCHOOL (renamed from SchoolCalendar) ─────────────────────────────
 
 model HighSchool {
-  id                  String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  district            District @relation(fields: [districtId], references: [id])
-  districtId          String
+  district   District @relation(fields: [districtId], references: [id])
+  districtId String
 
-  schoolName          String
+  schoolName      String
   /// 6-digit NCAA / College Board code
-  ceebCode            String   @unique
-  ucInstitutionId     String?
-  schoolCleared       Boolean  @default(false)
-  state               String   @default("CA")
-  city                String?
+  ceebCode        String  @unique
+  ucInstitutionId String?
+  schoolCleared   Boolean @default(false)
+  state           String  @default("CA")
+  city            String?
 
   // ── Academic calendar (migrated from SchoolCalendar) ──
   seniorFallTermStart     DateTime?
   summerTermEnd           DateTime?
-  maxCoresPerTerm         Int      @default(4)
-  maxEmsPerTerm           Int      @default(2)
+  maxCoresPerTerm         Int       @default(4)
+  maxEmsPerTerm           Int       @default(2)
   calendarSourceUrl       String?
   creditRecoveryDeadlines Json?
   summerRegistrationClose DateTime?
@@ -124,27 +138,27 @@ model HighSchool {
   lastCalendarVerified    DateTime?
 
   /// D2 §7 — school-specific course-name alias map (normalized key → canonical normalized)
-  courseNameAliases       Json?
+  courseNameAliases Json?
 
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  students            StudentAthlete[]
-  terms               SchoolTerm[]
-  classifications     CourseClassification[]
+  students        StudentAthlete[]
+  terms           SchoolTerm[]
+  classifications CourseClassification[]
 
   @@schema("ttg")
 }
 
 model SchoolTerm {
-  id             String     @id @default(cuid())
-  highSchool     HighSchool @relation(fields: [highSchoolId], references: [id], onDelete: Cascade)
-  highSchoolId   String
-  termName       String
-  termType       String
-  startDate      DateTime
-  endDate        DateTime
-  createdAt      DateTime   @default(now())
+  id           String     @id @default(cuid())
+  highSchool   HighSchool @relation(fields: [highSchoolId], references: [id], onDelete: Cascade)
+  highSchoolId String
+  termName     String
+  termType     String
+  startDate    DateTime
+  endDate      DateTime
+  createdAt    DateTime   @default(now())
 
   @@schema("ttg")
 }
@@ -152,39 +166,39 @@ model SchoolTerm {
 // ─── D2: COURSE CLASSIFICATION CATALOG ───────────────────────────────────────
 
 model CourseClassification {
-  id                    String     @id @default(cuid())
+  id String @id @default(cuid())
 
-  highSchool            HighSchool @relation(fields: [highSchoolId], references: [id], onDelete: Cascade)
-  highSchoolId          String
-  ceebCode              String
-  ucInstitutionId       String?
+  highSchool      HighSchool @relation(fields: [highSchoolId], references: [id], onDelete: Cascade)
+  highSchoolId    String
+  ceebCode        String
+  ucInstitutionId String?
 
-  courseNameNormalized  String
-  courseNameDisplay     String
-  academicYear          String
+  courseNameNormalized String
+  courseNameDisplay    String
+  academicYear         String
 
   ncaaD1Category        String?
   ncaaD2Category        String?
-  ncaaApproved          Boolean    @default(false)
-  ncaaApprovedHonors    Boolean    @default(false)
-  countsGeometryForNcaa Boolean    @default(false)
+  ncaaApproved          Boolean @default(false)
+  ncaaApprovedHonors    Boolean @default(false)
+  countsGeometryForNcaa Boolean @default(false)
 
   agCategory            String?
-  agApproved            Boolean    @default(false)
-  ucApprovedHonors      Boolean    @default(false)
-  countsLabForAg        Boolean    @default(false)
-  countsGeometryForAg   Boolean    @default(false)
+  agApproved            Boolean @default(false)
+  ucApprovedHonors      Boolean @default(false)
+  countsLabForAg        Boolean @default(false)
+  countsGeometryForAg   Boolean @default(false)
   agLanguageCode        String?
-  preNinthGradeEligible Boolean    @default(false)
+  preNinthGradeEligible Boolean @default(false)
 
-  dataSourceClass       String     @default("B")
-  lastVerifiedDate      DateTime
-  sourceUrl             String
-  ingestionMethod       String
-  verifiedBy            String?
+  dataSourceClass  String   @default("B")
+  lastVerifiedDate DateTime
+  sourceUrl        String
+  ingestionMethod  String
+  verifiedBy       String?
 
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([highSchoolId, courseNameNormalized, academicYear])
   @@index([highSchoolId, ncaaD1Category])
@@ -196,32 +210,33 @@ model CourseClassification {
 // ─── STUDENT ATHLETE ─────────────────────────────────────────────────────────
 
 model StudentAthlete {
-  id                  String           @id @default(cuid())
-  firstName           String
-  lastName            String
-  grade               Int
-  targetDivision      TargetDivision
+  id                   String         @id @default(cuid())
+  firstName            String
+  lastName             String
+  grade                Int
+  targetDivision       TargetDivision
   enrollmentDateGrade9 DateTime
-  highSchoolId        String
-  highSchoolName      String
+  highSchoolId         String
+  highSchoolName       String
 
-  highSchool          HighSchool?      @relation(fields: [highSchoolId], references: [id])
-  advisor             User?            @relation("AdvisorStudents", fields: [advisorId], references: [id])
-  advisorId           String?
+  highSchool HighSchool? @relation(fields: [highSchoolId], references: [id])
+  advisor    User?       @relation("AdvisorStudents", fields: [advisorId], references: [id])
+  advisorId  String?
 
-  courses             CourseRecord[]
-  f5Results           F5Result[]
+  courses                      CourseRecord[]
+  f5Results                    F5Result[]
   compositeBandAcknowledgments CompositeBandAcknowledgment[]
-  gradeUpdates        GradeUpdate[]
-  aimsAssessments     AimsAssessment[]
-  engagementObservations EngagementObservation[]
+  gradeUpdates                 GradeUpdate[]
+  aimsAssessments              AimsAssessment[]
+  engagementObservations       EngagementObservation[]
+  ocrJobs                      OcrJob[]
+  advisorAssignments           StudentAdvisorAssignment[]
 
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([advisorId])
   @@index([highSchoolId])
-
   @@schema("ttg")
 }
 
@@ -244,31 +259,30 @@ model CompositeBandAcknowledgment {
 // ─── COURSE RECORD ───────────────────────────────────────────────────────────
 
 model CourseRecord {
-  id                    String         @id @default(cuid())
-  student               StudentAthlete @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  studentId             String
-  courseName            String
-  gradeLetterNormalized String
-  term                  String?
-  termEndDate           DateTime
-  termLength            String   @default("semester")
-  academicYear          String?
-  dataSourceClass       String   @default("B")
-  ncaaD1Category        String?
-  ncaaApproved          Boolean        @default(false)
-  agCategory            String?
+  id                      String         @id @default(cuid())
+  student                 StudentAthlete @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId               String
+  courseName              String
+  gradeLetterNormalized   String
+  term                    String?
+  termEndDate             DateTime
+  termLength              String         @default("semester")
+  academicYear            String?
+  dataSourceClass         String         @default("B")
+  ncaaD1Category          String?
+  ncaaApproved            Boolean        @default(false)
+  agCategory              String?
   classificationUpdatedAt DateTime?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  gradeUpdates          GradeUpdate[]
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  gradeUpdates            GradeUpdate[]
 
   @@index([studentId])
-
   @@schema("ttg")
 }
 
 model GradeUpdate {
-  id                String        @id @default(uuid())
+  id                String   @id @default(uuid())
   student_id        String
   course_record_id  String
   observed_grade    String
@@ -285,7 +299,7 @@ model GradeUpdate {
 }
 
 model AimsAssessment {
-  id                         String        @id @default(uuid())
+  id                         String   @id @default(uuid())
   student_id                 String
   social_identity_score      Float
   exclusivity_score          Float
@@ -302,7 +316,7 @@ model AimsAssessment {
 }
 
 model EngagementObservation {
-  id                String        @id @default(uuid())
+  id                String   @id @default(uuid())
   student_id        String
   observed_at       DateTime
   engagement_type   String
@@ -319,41 +333,39 @@ model EngagementObservation {
   @@schema("ttg")
 }
 
-
 // ─── F5 RESULT ───────────────────────────────────────────────────────────────
 
 model F5Result {
-  id                   String         @id @default(cuid())
-  student              StudentAthlete @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  studentId            String
-  computedAt           DateTime
+  id         String         @id @default(cuid())
+  student    StudentAthlete @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId  String
+  computedAt DateTime
 
-  applicable           Boolean
-  notApplicableReason  String?
+  applicable          Boolean
+  notApplicableReason String?
 
-  lockInDate           DateTime?
-  lockInDateBasis      String?
-  provisionalFlag      Boolean        @default(false)
-  daysToLock           Int?
-  pastLock             Boolean        @default(false)
+  lockInDate      DateTime?
+  lockInDateBasis String?
+  provisionalFlag Boolean   @default(false)
+  daysToLock      Int?
+  pastLock        Boolean   @default(false)
 
-  completedTotal       Int            @default(0)
-  completedEngMathSci  Int            @default(0)
-  missingTotal         Int            @default(0)
-  missingEngMathSci    Int            @default(0)
+  completedTotal      Int @default(0)
+  completedEngMathSci Int @default(0)
+  missingTotal        Int @default(0)
+  missingEngMathSci   Int @default(0)
 
-  riskBand             RiskBand
-  evidenceTier         EvidenceTier
+  riskBand     RiskBand
+  evidenceTier EvidenceTier
 
-  agFailureDualFlags   Json           @default("[]")
-  unclassifiedCourseIds Json          @default("[]")
-  recommendedCoursesNextTerm Json     @default("[]")
+  agFailureDualFlags         Json @default("[]")
+  unclassifiedCourseIds      Json @default("[]")
+  recommendedCoursesNextTerm Json @default("[]")
 
-  createdAt            DateTime       @default(now())
+  createdAt DateTime @default(now())
 
   @@index([studentId])
   @@index([computedAt])
-
   @@schema("ttg")
 }
 
@@ -377,34 +389,105 @@ model NcaEligibilityChecklistState {
 }
 
 model PdfExportJob {
-  id           String   @id @default(uuid())
-  advisor_id   String
-  job_type     String   // 'student_briefing' | 'cohort_summary'
-  status       String   // 'pending' | 'generating' | 'ready' | 'failed'
-  student_id   String?  // set for student_briefing type
-  error        String?
-  pdf_buffer   Bytes?   // stored as binary — cleared after 1 hour TTL
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  advisor_id String
+  job_type   String // 'student_briefing' | 'cohort_summary'
+  status     String // 'pending' | 'generating' | 'ready' | 'failed'
+  student_id String? // set for student_briefing type
+  error      String?
+  pdf_buffer Bytes? // stored as binary — cleared after 1 hour TTL
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@index([advisor_id, status])
   @@map("pdf_export_jobs")
   @@schema("ttg")
 }
 
+/// Sprint 6 / Workstream C — per-advisor profile + team role.
+/// Keyed on the Supabase user UUID; created lazily on first dashboard load.
+model AdvisorProfile {
+  id           String      @id @default(uuid())
+  advisor_id   String      @unique
+  team_role    AdvisorRole @default(advisor)
+  display_name String?
+  email        String?
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
+
+  assignmentsAsAdvisor StudentAdvisorAssignment[]
+
+  @@map("advisor_profiles")
+  @@schema("ttg")
+}
+
+/// Sprint 6 / Workstream C — student↔advisor scoping.
+model StudentAdvisorAssignment {
+  id          String   @id @default(uuid())
+  student_id  String
+  advisor_id  String
+  assigned_at DateTime @default(now())
+  assigned_by String
+
+  student StudentAthlete @relation(fields: [student_id], references: [id])
+  advisor AdvisorProfile @relation(fields: [advisor_id], references: [advisor_id])
+
+  @@unique([student_id, advisor_id])
+  @@index([advisor_id])
+  @@map("student_advisor_assignments")
+  @@schema("ttg")
+}
+
+/// Sprint 6 / Workstream C — pending team invites.
+model AdvisorInvite {
+  id         String      @id @default(uuid())
+  email      String
+  role       AdvisorRole @default(advisor)
+  invited_by String
+  token      String      @unique
+  accepted   Boolean     @default(false)
+  created_at DateTime    @default(now())
+  expires_at DateTime
+
+  @@index([token])
+  @@map("advisor_invites")
+  @@schema("ttg")
+}
+
+model OcrJob {
+  id                String   @id @default(uuid())
+  advisor_id        String
+  student_id        String
+  status            String // 'pending' | 'processing' | 'needs_review' | 'accepted' | 'rejected' | 'failed'
+  raw_text          String?  @db.Text
+  parsed_courses    Json?
+  accepted_courses  Json?
+  confidence_scores Json?
+  source_filename   String?
+  error             String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  student StudentAthlete @relation(fields: [student_id], references: [id])
+
+  @@index([advisor_id, status])
+  @@map("ocr_jobs")
+  @@schema("ttg")
+}
+
 model NcaEligibilityChecklistEvent {
-  id              String               @id @default(cuid())
-  state           NcaEligibilityChecklistState @relation(fields: [stateId], references: [id], onDelete: Cascade)
-  stateId         String
-  studentId       String
-  itemKey         NcaaChecklistItemKey
-  checked         Boolean
-  actorId         String
-  actorName       String?
-  sourceContext   String?
-  previousHash    String?
-  eventHash       String
-  createdAt       DateTime             @default(now())
+  id            String                       @id @default(cuid())
+  state         NcaEligibilityChecklistState @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  stateId       String
+  studentId     String
+  itemKey       NcaaChecklistItemKey
+  checked       Boolean
+  actorId       String
+  actorName     String?
+  sourceContext String?
+  previousHash  String?
+  eventHash     String
+  createdAt     DateTime                     @default(now())
 
   @@index([studentId, createdAt])
   @@index([stateId, createdAt])

@@ -14,13 +14,15 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, Users as TeamIcon } from "lucide-react";
 import { isNavActive, PRIMARY_NAV, type NavEntry } from "./nav-config";
 
 export interface AdvisorIdentity {
   name: string;
   email?: string;
   initials: string;
+  /** Sprint 6 / Workstream C — optional team role used to gate Team sub-nav. */
+  teamRole?: "owner" | "advisor" | "viewer";
 }
 
 export interface SidebarProps {
@@ -101,6 +103,22 @@ export function Sidebar({ advisor, onSignOut }: SidebarProps) {
         {settings && (
           <ul role="list">
             <NavRow entry={settings} active={isNavActive(pathname, settings)} />
+            {advisor?.teamRole === "owner"
+              ? (() => {
+                  const teamEntry: NavEntry = {
+                    href: "/dashboard/settings/team",
+                    label: "Team",
+                    icon: TeamIcon,
+                  };
+                  return (
+                    <NavRow
+                      entry={teamEntry}
+                      active={isNavActive(pathname, teamEntry)}
+                      indent
+                    />
+                  );
+                })()
+              : null}
           </ul>
         )}
         <div
@@ -151,7 +169,15 @@ export function Sidebar({ advisor, onSignOut }: SidebarProps) {
   );
 }
 
-function NavRow({ entry, active }: { entry: NavEntry; active: boolean }) {
+function NavRow({
+  entry,
+  active,
+  indent = false,
+}: {
+  entry: NavEntry;
+  active: boolean;
+  indent?: boolean;
+}) {
   const Icon = entry.icon;
   return (
     <li>
@@ -160,8 +186,8 @@ function NavRow({ entry, active }: { entry: NavEntry; active: boolean }) {
         aria-current={active ? "page" : undefined}
         className="relative flex items-center gap-3 transition-colors duration-[120ms] ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-focus)]"
         style={{
-          height: 44,
-          paddingLeft: 16,
+          height: indent ? 36 : 44,
+          paddingLeft: indent ? 40 : 16,
           paddingRight: 16,
           background: active ? "var(--color-green-tint)" : "transparent",
           color: "var(--color-text)",
@@ -181,11 +207,13 @@ function NavRow({ entry, active }: { entry: NavEntry; active: boolean }) {
           />
         ) : null}
         <Icon
-          size={18}
+          size={indent ? 14 : 18}
           aria-hidden
           style={{ color: active ? "var(--color-green)" : "var(--color-muted)" }}
         />
-        <span style={{ fontSize: 13, fontWeight: active ? 600 : 500 }}>{entry.label}</span>
+        <span style={{ fontSize: indent ? 12 : 13, fontWeight: active ? 600 : 500 }}>
+          {entry.label}
+        </span>
       </Link>
     </li>
   );
