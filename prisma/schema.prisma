@@ -215,6 +215,7 @@ model StudentAthlete {
   gradeUpdates        GradeUpdate[]
   aimsAssessments     AimsAssessment[]
   engagementObservations EngagementObservation[]
+  ocrJobs             OcrJob[]
 
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
@@ -389,6 +390,27 @@ model PdfExportJob {
 
   @@index([advisor_id, status])
   @@map("pdf_export_jobs")
+  @@schema("ttg")
+}
+
+model OcrJob {
+  id                String   @id @default(uuid())
+  advisor_id        String
+  student_id        String
+  status            String
+  raw_text          String?  @db.Text
+  parsed_courses    Json?
+  accepted_courses  Json?
+  confidence_scores Json?
+  source_filename   String?
+  error             String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  student StudentAthlete @relation(fields: [student_id], references: [id])
+
+  @@index([advisor_id, status])
+  @@map("ocr_jobs")
   @@schema("ttg")
 }
 

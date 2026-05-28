@@ -28,6 +28,8 @@
     "lucide-react": "^1.14.0",
     "next": "14.2.35",
     "next-auth": "^4.24.14",
+    "openai": "^6.39.0",
+    "pdfjs-dist": "^5.7.284",
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^3.8.1",
