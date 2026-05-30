@@ -41,7 +41,13 @@ const BAND_TO_KEY: Record<string, BandKey> = {
   LOCKED: "locked",
 };
 
-export function RosterTable({ data }: { data: CohortStudentRow[] }) {
+export function RosterTable({
+  data,
+  stickyHeader = false,
+}: {
+  data: CohortStudentRow[];
+  stickyHeader?: boolean;
+}) {
   const router = useRouter();
   const [sort, setSort] = React.useState<{ column: SortKey; dir: SortDir } | null>(null);
 
@@ -121,7 +127,12 @@ export function RosterTable({ data }: { data: CohortStudentRow[] }) {
     <>
       {/* Desktop / tablet table — hidden on mobile */}
       <div className="mobile:hidden">
-        <div className={`grid ${cols} gap-x-4 bg-surface-inverse px-6 py-3 text-white`}>
+        <div
+          className={[
+            `grid ${cols} gap-x-4 bg-surface-inverse px-6 py-3 text-white`,
+            stickyHeader ? "sticky top-0 z-10" : "",
+          ].join(" ")}
+        >
           <SortableHeader label="NAME"         onClick={() => onSort("name")}            indicator={<SortIndicator column="name" />}            align="left" />
           <SortableHeader label="OVERALL RISK" onClick={() => onSort("overallRisk")}     indicator={<SortIndicator column="overallRisk" />}     align="left" />
           <SortableHeader label="GRADE"        onClick={() => onSort("grade")}           indicator={<SortIndicator column="grade" />}           align="right" />

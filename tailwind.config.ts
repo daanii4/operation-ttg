@@ -46,6 +46,15 @@ const config: Config = {
         // Borders (used as bg for stroke utilities only when needed)
         "border-default": "var(--border-default)",
         "border-hover":   "var(--border-hover)",
+        "status-track":          "var(--status-track)",
+        "status-support":        "var(--status-support)",
+        "status-urgent":         "var(--status-urgent)",
+        "status-escalated":      "var(--status-escalated)",
+        "status-track-tint":     "var(--status-track-tint)",
+        "status-support-tint":   "var(--status-support-tint)",
+        "status-urgent-tint":    "var(--status-urgent-tint)",
+        "status-escalated-tint": "var(--status-escalated-tint)",
+        "safety-stroke":         "var(--safety-stroke)",
         // TTG band tokens
         "band-track":         "var(--band-track)",
         "band-support":       "var(--band-support)",

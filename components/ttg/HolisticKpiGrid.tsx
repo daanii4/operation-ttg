@@ -15,20 +15,33 @@ import { RISK_VOCABULARY } from "@/components/ttg/risk-vocabulary";
 type Props = {
   summary: HolisticSummary;
   className?: string;
+  layout?: "full" | "sidebar";
 };
 
-export function HolisticKpiGrid({ summary, className }: Props) {
+export function HolisticKpiGrid({ summary, className, layout = "full" }: Props) {
+  const gridClass =
+    layout === "sidebar"
+      ? "grid grid-cols-2 gap-3"
+      : "grid gap-4 desktop:grid-cols-4 tablet:grid-cols-2 mobile:grid-cols-1";
+
   return (
     <Card variant="default" padding="lg" className={["mt-8", className].filter(Boolean).join(" ")}>
-      <div className="mb-5">
-        <h2 className="font-serif text-[20px] leading-[1.25] text-text-primary">
-          Holistic Early Warning Roll-Up
-        </h2>
-        <p className="mt-1 font-sans text-[12px] text-text-tertiary">
-          NCAA 10/7 is one lens. This view also surfaces A-G, GPA trajectory, and AIMS escalation.
-        </p>
-      </div>
-      <div className="grid gap-4 desktop:grid-cols-4 tablet:grid-cols-2 mobile:grid-cols-1">
+      {layout === "full" ? (
+        <div className="mb-5">
+          <h2 className="font-serif text-[20px] leading-[1.25] text-text-primary">
+            Holistic Early Warning Roll-Up
+          </h2>
+          <p className="mt-1 font-sans text-[12px] text-text-tertiary">
+            NCAA 10/7 is one lens. This view also surfaces A-G, GPA trajectory, and AIMS escalation.
+          </p>
+        </div>
+      ) : (
+        <div className="mb-4">
+          <h2 className="font-serif text-[18px] leading-[1.25] text-text-primary">Band lenses</h2>
+          <p className="mt-1 font-sans text-[11px] text-text-tertiary">NCAA 10/7 · A-G · GPA · AIMS</p>
+        </div>
+      )}
+      <div className={gridClass}>
         <FrameworkCard
           title="NCAA D1 10/7"
           caption="Core-course lock-in"

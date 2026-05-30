@@ -18,15 +18,19 @@ const BAND_DEFAULT: Record<BandKey, { fill: string; border: string; text: string
   yellow:     { fill: "bg-band-support-fill", border: "border-band-support-border", text: "text-band-support" },
   red:        { fill: "bg-band-urgent-fill",  border: "border-band-urgent-border",  text: "text-band-urgent" },
   locked:     { fill: "bg-band-pivot-fill",   border: "border-band-pivot-border",   text: "text-band-pivot" },
-  escalation: { fill: "bg-escalation-fill",   border: "border-escalation/30",       text: "text-escalation" },
+  escalation: {
+    fill: "bg-status-escalated-tint",
+    border: "border-[color:var(--status-escalated-border)]",
+    text: "text-status-escalated",
+  },
 };
 
 const BAND_TOKEN: Record<BandKey, string> = {
-  green:      "var(--band-track)",
-  yellow:     "var(--band-support)",
-  red:        "var(--band-urgent)",
-  locked:     "var(--band-pivot)",
-  escalation: "var(--color-escalation)",
+  green:      "var(--status-track)",
+  yellow:     "var(--status-support)",
+  red:        "var(--status-urgent)",
+  locked:     "var(--status-escalated)",
+  escalation: "var(--status-escalated)",
 };
 
 export function Badge({
