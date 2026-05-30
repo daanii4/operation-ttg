@@ -1,5 +1,5 @@
 /**
- * AppHeader — branded olive header (Operation Scholars OS chrome).
+ * AppHeader — branded olive header (Operation TTG chrome).
  * Styles live in styles/scholars-header.css (imported from app/layout.tsx), not inlined here,
  * so server HTML matches client hydration (React escapes inline <style> text differently).
  */
