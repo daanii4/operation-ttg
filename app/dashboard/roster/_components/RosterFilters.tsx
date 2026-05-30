@@ -8,7 +8,7 @@ import {
   ROSTER_CHROME_TOP_PX,
   ROSTER_FILTER_BAR_HEIGHT_PX,
 } from "./roster-layout";
-import { RISK_BANDS, type UseRosterFiltersResult } from "./use-roster-filters";
+import { HOLISTIC_BANDS, type UseRosterFiltersResult } from "./use-roster-filters";
 
 export interface RosterFiltersProps {
   filters: UseRosterFiltersResult;
@@ -40,11 +40,11 @@ export function RosterFilters({
         active={allBandsActive}
         onToggle={filters.setAllBands}
       />
-      {RISK_BANDS.map((b) => (
+      {HOLISTIC_BANDS.map((b) => (
         <FilterChip
           key={b}
           band={b}
-          label={RISK_VOCABULARY[b].label}
+          label={b === "ESCALATED" ? RISK_VOCABULARY.ESCALATED.label : RISK_VOCABULARY[b].label}
           active={filters.state.bands.has(b)}
           onToggle={() => filters.toggleBand(b)}
           disabled={filters.bandCounts[b] === 0}

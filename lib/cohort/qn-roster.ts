@@ -1,10 +1,16 @@
 /**
- * Cohort row deriver — NCAA 10/7 fields for Roster; holistic band for Briefings.
+ * Cohort row deriver — holistic roll-up for roster triage; NCAA fields for lock runway.
  */
 
 import type { CohortStudentRow } from "@/app/api/cohort/route";
-import type { Band } from "@/components/ui/qn";
+import type { HolisticBand } from "@/lib/roster/holistic-band";
 import type { RiskBand } from "@/components/ttg/risk-vocabulary";
+import { deriveConcernTags, type ConcernTag } from "@/lib/roster/concern-tags";
+import {
+  deriveHolisticBand,
+  deriveHolisticWeeks,
+  normalizeNcaaRiskBand,
+} from "@/lib/roster/holistic-band";
 import { sortByRosterUrgency } from "@/lib/roster/roster-sort";
 
 export type QnRosterRow = {
@@ -17,9 +23,9 @@ export type QnRosterRow = {
   graduationYear: number;
   targetDivision: string;
   highSchoolName: string;
-  /** Holistic roll-up (Briefings — may be ESCALATED). */
-  band: Band;
-  /** NCAA 10/7 band (Roster Status column). */
+  /** Holistic worst-case band — roster Status column & default sort. */
+  band: HolisticBand;
+  /** NCAA 10/7 band — action window / past-lock only (not Status). */
   riskBand: RiskBand;
   daysToLock: number | null;
   provisionalFlag: boolean;
@@ -28,32 +34,13 @@ export type QnRosterRow = {
   missingTotal: number;
   agDualFlagCount: number;
   weeksToCriticalAction: number | null;
-  primaryConcern: string | null;
+  concernTags: ConcernTag[];
 };
 
 const REFERENCE_GRAD_YEAR = 2026;
 
 function gradeToGradYear(grade: number): number {
   return REFERENCE_GRAD_YEAR + Math.max(0, 12 - grade);
-}
-
-function normalizeRiskBand(row: CohortStudentRow): RiskBand {
-  if (
-    row.riskBand === "GREEN" ||
-    row.riskBand === "YELLOW" ||
-    row.riskBand === "RED" ||
-    row.riskBand === "LOCKED"
-  ) {
-    return row.riskBand;
-  }
-  return "GREEN";
-}
-
-function deriveHolisticBand(row: CohortStudentRow): Band {
-  if (row.overallRisk === "CRITICAL" && row.aimsRisk === "HIGH") return "ESCALATED";
-  if (row.overallRisk === "CRITICAL") return "RED";
-  if (row.overallRisk === "AT_RISK") return "YELLOW";
-  return "GREEN";
 }
 
 function deriveWeeksFromDays(daysToLock: number | null, riskBand: RiskBand): number | null {
@@ -63,30 +50,9 @@ function deriveWeeksFromDays(daysToLock: number | null, riskBand: RiskBand): num
   return weeks <= 4 ? weeks : null;
 }
 
-function deriveHolisticWeeks(band: Band): number | null {
-  switch (band) {
-    case "ESCALATED":
-      return 0;
-    case "RED":
-      return 1;
-    case "YELLOW":
-      return 4;
-    default:
-      return null;
-  }
-}
-
-function derivePrimaryConcern(row: CohortStudentRow): string | null {
-  if (row.recommendedAdvisorAction) return row.recommendedAdvisorAction;
-  if (row.aimsReason) return row.aimsReason;
-  if (row.gpaTrajectory === "declining") return "GPA trending down";
-  if (row.agMissingCount > 0) return `${row.agMissingCount} A-G subject(s) missing`;
-  return null;
-}
-
 export function toQnRosterRow(row: CohortStudentRow): QnRosterRow {
   const band = deriveHolisticBand(row);
-  const riskBand = normalizeRiskBand(row);
+  const riskBand = normalizeNcaaRiskBand(row);
   const daysToLock = row.daysToLock;
   return {
     studentId: row.studentId,
@@ -107,7 +73,7 @@ export function toQnRosterRow(row: CohortStudentRow): QnRosterRow {
     missingTotal: row.missingTotal,
     agDualFlagCount: row.agDualFlagCount,
     weeksToCriticalAction: deriveWeeksFromDays(daysToLock, riskBand) ?? deriveHolisticWeeks(band),
-    primaryConcern: derivePrimaryConcern(row),
+    concernTags: deriveConcernTags(row),
   };
 }
 
@@ -115,7 +81,7 @@ export function toQnRosterRows(rows: CohortStudentRow[]): QnRosterRow[] {
   return rows.map(toQnRosterRow);
 }
 
-/** Roster default: LOCKED → RED → YELLOW → GREEN, daysToLock asc, missingTotal desc. */
+/** Default sort uses holistic band urgency (never a rosier picture than worst-case). */
 export function sortQnRosterRows(rows: QnRosterRow[]): QnRosterRow[] {
   return sortByRosterUrgency(rows);
 }

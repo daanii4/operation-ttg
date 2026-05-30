@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUp, ChevronRight, Flag } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import { ActionWindowPill, BandBadge } from "@/components/ui/qn";
 import type { QnRosterRow } from "@/lib/cohort/qn-roster";
+import { ConcernTagList } from "@/components/roster/ConcernTagList";
 import { BAND_RANK, compareRosterUrgency } from "@/lib/roster/roster-sort";
 import type { RiskBand } from "@/components/ttg/risk-vocabulary";
 import {
@@ -38,7 +39,7 @@ export function RosterTable({ rows, loading = false }: RosterTableProps) {
         case "grad":
           return (a.graduationYear - b.graduationYear) * dir;
         case "band":
-          return (BAND_RANK[a.riskBand] - BAND_RANK[b.riskBand]) * dir;
+          return (BAND_RANK[a.band] - BAND_RANK[b.band]) * dir;
         case "weeks": {
           const aw = a.daysToLock ?? (a.riskBand === "LOCKED" ? -1 : Number.POSITIVE_INFINITY);
           const bw = b.daysToLock ?? (b.riskBand === "LOCKED" ? -1 : Number.POSITIVE_INFINITY);
@@ -202,14 +203,15 @@ function RosterRow({
       <span className="font-mono text-[13px] text-text-primary">{row.graduationYear}</span>
 
       <span>
-        <BandBadge band={row.riskBand} />
+        <BandBadge band={row.band} />
       </span>
 
       <ActionWindowCell row={row} />
 
       <CoresCell row={row} />
 
-      <span>
+      <span className="flex min-w-0 flex-col gap-1">
+        {row.concernTags.length > 0 ? <ConcernTagList tags={row.concernTags} max={2} /> : null}
         {row.agDualFlagCount > 0 ? (
           <Badge band="escalation" size="sm" icon={Flag}>
             A-G
@@ -253,11 +255,11 @@ function CoresCell({ row }: { row: QnRosterRow }) {
         <span
           className={[
             "rounded-sm border px-1.5 py-0.5 font-mono text-[10px] font-medium",
-            row.riskBand === "GREEN"
+            row.band === "GREEN"
               ? "border-[color:var(--color-green)] bg-[var(--color-green-tint)] text-[#15803d]"
-              : row.riskBand === "YELLOW"
+              : row.band === "YELLOW"
                 ? "border-[color:var(--color-yellow)] bg-[var(--color-yellow-tint)] text-[#b45309]"
-                : row.riskBand === "RED"
+                : row.band === "RED"
                   ? "border-[color:var(--color-red-tint)] bg-[var(--color-red-tint)] text-[#b91c1c]"
                   : "border-[color:var(--color-escalated)] bg-[var(--color-escalated-tint)] text-[#6d28d9]",
           ].join(" ")}

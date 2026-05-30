@@ -4,7 +4,7 @@ import * as React from "react";
 import { X } from "lucide-react";
 import { Button, FilterChip, UtilityFilterChip } from "@/components/ui/qn";
 import { RISK_VOCABULARY } from "@/components/ttg/risk-vocabulary";
-import { RISK_BANDS, type UseRosterFiltersResult } from "./use-roster-filters";
+import { HOLISTIC_BANDS, type UseRosterFiltersResult } from "./use-roster-filters";
 
 export interface RosterFilterSheetProps {
   open: boolean;
@@ -50,11 +50,11 @@ export function RosterFilterSheet({ open, onClose, filters }: RosterFilterSheetP
               Eligibility
             </h3>
             <div className="flex flex-wrap gap-2">
-              {RISK_BANDS.map((b) => (
+              {HOLISTIC_BANDS.map((b) => (
                 <FilterChip
                   key={b}
                   band={b}
-                  label={RISK_VOCABULARY[b].label}
+                  label={b === "ESCALATED" ? RISK_VOCABULARY.ESCALATED.label : RISK_VOCABULARY[b].label}
                   active={filters.state.bands.has(b)}
                   onToggle={() => filters.toggleBand(b)}
                   disabled={filters.bandCounts[b] === 0}

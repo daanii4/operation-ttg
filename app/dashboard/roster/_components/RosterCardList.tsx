@@ -5,14 +5,15 @@ import { useRouter } from "next/navigation";
 import { Flag } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import { ActionWindowPill, BandBadge } from "@/components/ui/qn";
+import { ConcernTagList } from "@/components/roster/ConcernTagList";
 import type { QnRosterRow } from "@/lib/cohort/qn-roster";
-import type { RiskBand } from "@/components/ttg/risk-vocabulary";
+import type { HolisticBand } from "@/lib/roster/holistic-band";
 
 export interface RosterCardListProps {
   rows: QnRosterRow[];
 }
 
-function spineColor(band: RiskBand): string {
+function spineColor(band: HolisticBand): string {
   switch (band) {
     case "GREEN":
       return "var(--color-green)";
@@ -20,8 +21,10 @@ function spineColor(band: RiskBand): string {
       return "var(--color-yellow)";
     case "RED":
       return "var(--color-red)";
-    case "LOCKED":
+    case "ESCALATED":
       return "var(--color-escalated)";
+    default:
+      return "var(--color-green)";
   }
 }
 
@@ -31,8 +34,7 @@ export function RosterCardList({ rows }: RosterCardListProps) {
   return (
     <ul role="list" className="flex flex-col gap-3 p-4 md:hidden">
       {rows.map((row) => {
-        const color = spineColor(row.riskBand);
-        const division = row.targetDivision.replace(/_/g, " ");
+        const color = spineColor(row.band);
 
         return (
           <li key={row.studentId}>
@@ -51,12 +53,18 @@ export function RosterCardList({ rows }: RosterCardListProps) {
                 <span className="font-serif text-[15px] font-semibold leading-tight text-text-primary">
                   {row.fullName}
                 </span>
-                <BandBadge band={row.riskBand} />
+                <BandBadge band={row.band} />
               </div>
 
               <p className="mt-1 font-sans text-[12px] text-text-tertiary">
                 Grade {row.grade} · {row.sport} · {row.graduationYear}
               </p>
+
+              {row.concernTags.length > 0 ? (
+                <div className="mt-2">
+                  <ConcernTagList tags={row.concernTags} max={2} />
+                </div>
+              ) : null}
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {row.riskBand === "LOCKED" ? (

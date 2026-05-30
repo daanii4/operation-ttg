@@ -1,31 +1,34 @@
+import type { HolisticBand } from "./holistic-band";
 import type { RiskBand } from "@/components/ttg/risk-vocabulary";
+import { HOLISTIC_BAND_RANK } from "./holistic-band";
 
-/** NCAA 10/7 eligibility urgency — LOCKED is highest stakes. */
-export const BAND_RANK: Record<RiskBand, number> = {
-  LOCKED: 0,
-  RED: 1,
-  YELLOW: 2,
-  GREEN: 3,
-};
+export { HOLISTIC_BAND_RANK as BAND_RANK };
 
 export type RosterSortableRow = {
-  riskBand: RiskBand;
-  daysToLock: number | null;
+  band: HolisticBand;
+  weeksToCriticalAction: number | null;
   missingTotal: number;
+  daysToLock: number | null;
+  riskBand: RiskBand;
   fullName: string;
-  sport?: string;
-  graduationYear?: number;
-  completedTotal?: number;
 };
 
+/** Holistic urgency: ESCALATED → RED → YELLOW → GREEN, then weeks, missing cores, days to lock. */
 export function compareRosterUrgency(a: RosterSortableRow, b: RosterSortableRow): number {
-  const ra = BAND_RANK[a.riskBand] ?? 9;
-  const rb = BAND_RANK[b.riskBand] ?? 9;
+  const ra = HOLISTIC_BAND_RANK[a.band];
+  const rb = HOLISTIC_BAND_RANK[b.band];
   if (ra !== rb) return ra - rb;
+
+  const aw = a.weeksToCriticalAction ?? Number.POSITIVE_INFINITY;
+  const bw = b.weeksToCriticalAction ?? Number.POSITIVE_INFINITY;
+  if (aw !== bw) return aw - bw;
+
+  if (b.missingTotal !== a.missingTotal) return b.missingTotal - a.missingTotal;
+
   const da = a.daysToLock ?? (a.riskBand === "LOCKED" ? -1 : Number.POSITIVE_INFINITY);
   const db = b.daysToLock ?? (b.riskBand === "LOCKED" ? -1 : Number.POSITIVE_INFINITY);
   if (da !== db) return da - db;
-  if (b.missingTotal !== a.missingTotal) return b.missingTotal - a.missingTotal;
+
   return a.fullName.localeCompare(b.fullName);
 }
 

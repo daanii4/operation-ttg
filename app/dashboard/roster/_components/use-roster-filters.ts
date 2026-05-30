@@ -1,16 +1,16 @@
 "use client";
 
 import * as React from "react";
-import type { RiskBand } from "@/components/ttg/risk-vocabulary";
 import { RISK_VOCABULARY } from "@/components/ttg/risk-vocabulary";
+import { HOLISTIC_BANDS, type HolisticBand } from "@/lib/roster/holistic-band";
 import type { QnRosterRow } from "@/lib/cohort/qn-roster";
 
-export type RosterBandFilter = RiskBand | "AG_FLAGGED" | "PAST_LOCK";
+export { HOLISTIC_BANDS };
 
 export interface RosterFilterState {
   search: string;
   debouncedSearch: string;
-  bands: Set<RiskBand>;
+  bands: Set<HolisticBand>;
   agFlagged: boolean;
   pastLock: boolean;
   sport: string;
@@ -20,19 +20,22 @@ export interface RosterFilterState {
 export interface UseRosterFiltersResult {
   state: RosterFilterState;
   setSearch: (v: string) => void;
-  toggleBand: (b: RiskBand) => void;
+  toggleBand: (b: HolisticBand) => void;
   setAllBands: () => void;
   toggleAgFlagged: () => void;
   togglePastLock: () => void;
   setSport: (v: string) => void;
   setGradYear: (v: string) => void;
   clearAll: () => void;
-  removeFilter: (kind: "band" | "sport" | "gradYear" | "search" | "ag" | "pastLock", value?: string) => void;
+  removeFilter: (
+    kind: "band" | "sport" | "gradYear" | "search" | "ag" | "pastLock",
+    value?: string
+  ) => void;
   filtered: QnRosterRow[];
   activeFilterCount: number;
   sports: string[];
   gradYears: number[];
-  bandCounts: Record<RiskBand, number>;
+  bandCounts: Record<HolisticBand, number>;
   agFlaggedCount: number;
   pastLockCount: number;
   activeChips: Array<{
@@ -41,18 +44,6 @@ export interface UseRosterFiltersResult {
     label: string;
   }>;
 }
-
-const RISK_BANDS: RiskBand[] = ["GREEN", "YELLOW", "RED", "LOCKED"];
-
-const initialState = {
-  search: "",
-  debouncedSearch: "",
-  bands: new Set<RiskBand>(),
-  agFlagged: false,
-  pastLock: false,
-  sport: "ALL",
-  gradYear: "ALL",
-};
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = React.useState(value);
@@ -64,13 +55,13 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 export function useRosterFilters(rows: QnRosterRow[]): UseRosterFiltersResult {
-  const [search, setSearchRaw] = React.useState(initialState.search);
+  const [search, setSearchRaw] = React.useState("");
   const debouncedSearch = useDebouncedValue(search, 150);
-  const [bands, setBands] = React.useState<Set<RiskBand>>(initialState.bands);
-  const [agFlagged, setAgFlagged] = React.useState(initialState.agFlagged);
-  const [pastLock, setPastLock] = React.useState(initialState.pastLock);
-  const [sport, setSport] = React.useState(initialState.sport);
-  const [gradYear, setGradYear] = React.useState(initialState.gradYear);
+  const [bands, setBands] = React.useState<Set<HolisticBand>>(new Set());
+  const [agFlagged, setAgFlagged] = React.useState(false);
+  const [pastLock, setPastLock] = React.useState(false);
+  const [sport, setSport] = React.useState("ALL");
+  const [gradYear, setGradYear] = React.useState("ALL");
 
   const sports = React.useMemo(() => {
     const set = new Set<string>();
@@ -85,8 +76,13 @@ export function useRosterFilters(rows: QnRosterRow[]): UseRosterFiltersResult {
   }, [rows]);
 
   const bandCounts = React.useMemo(() => {
-    const counts: Record<RiskBand, number> = { GREEN: 0, YELLOW: 0, RED: 0, LOCKED: 0 };
-    for (const r of rows) counts[r.riskBand] += 1;
+    const counts: Record<HolisticBand, number> = {
+      GREEN: 0,
+      YELLOW: 0,
+      RED: 0,
+      ESCALATED: 0,
+    };
+    for (const r of rows) counts[r.band] += 1;
     return counts;
   }, [rows]);
 
@@ -106,7 +102,7 @@ export function useRosterFilters(rows: QnRosterRow[]): UseRosterFiltersResult {
         const hay = `${row.fullName} ${row.sport} ${row.highSchoolName}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
-      if (bands.size > 0 && !bands.has(row.riskBand)) return false;
+      if (bands.size > 0 && !bands.has(row.band)) return false;
       if (agFlagged && row.agDualFlagCount <= 0) return false;
       if (pastLock && row.riskBand !== "LOCKED") return false;
       if (sport !== "ALL" && row.sport !== sport) return false;
@@ -128,9 +124,10 @@ export function useRosterFilters(rows: QnRosterRow[]): UseRosterFiltersResult {
     if (debouncedSearch.trim()) {
       out.push({ kind: "search", value: debouncedSearch, label: `“${debouncedSearch.trim()}”` });
     }
-    bands.forEach((b) =>
-      out.push({ kind: "band", value: b, label: RISK_VOCABULARY[b].label })
-    );
+    bands.forEach((b) => {
+      const label = b === "ESCALATED" ? RISK_VOCABULARY.ESCALATED.label : RISK_VOCABULARY[b].label;
+      out.push({ kind: "band", value: b, label });
+    });
     if (agFlagged) out.push({ kind: "ag", value: "ag", label: "A-G flagged" });
     if (pastLock) out.push({ kind: "pastLock", value: "pastLock", label: "Past lock" });
     if (sport !== "ALL") out.push({ kind: "sport", value: sport, label: sport });
@@ -142,7 +139,7 @@ export function useRosterFilters(rows: QnRosterRow[]): UseRosterFiltersResult {
 
   const setSearch = React.useCallback((v: string) => setSearchRaw(v), []);
 
-  const toggleBand = React.useCallback((b: RiskBand) => {
+  const toggleBand = React.useCallback((b: HolisticBand) => {
     setBands((prev) => {
       const next = new Set(prev);
       if (next.has(b)) next.delete(b);
@@ -156,9 +153,6 @@ export function useRosterFilters(rows: QnRosterRow[]): UseRosterFiltersResult {
     setAgFlagged(false);
     setPastLock(false);
   }, []);
-
-  const toggleAgFlagged = React.useCallback(() => setAgFlagged((v) => !v), []);
-  const togglePastLock = React.useCallback(() => setPastLock((v) => !v), []);
 
   const clearAll = React.useCallback(() => {
     setSearchRaw("");
@@ -175,7 +169,7 @@ export function useRosterFilters(rows: QnRosterRow[]): UseRosterFiltersResult {
       if (kind === "band" && value) {
         setBands((prev) => {
           const next = new Set(prev);
-          next.delete(value as RiskBand);
+          next.delete(value as HolisticBand);
           return next;
         });
       }
@@ -200,8 +194,8 @@ export function useRosterFilters(rows: QnRosterRow[]): UseRosterFiltersResult {
     setSearch,
     toggleBand,
     setAllBands,
-    toggleAgFlagged,
-    togglePastLock,
+    toggleAgFlagged: () => setAgFlagged((v) => !v),
+    togglePastLock: () => setPastLock((v) => !v),
     setSport,
     setGradYear,
     clearAll,
@@ -216,5 +210,3 @@ export function useRosterFilters(rows: QnRosterRow[]): UseRosterFiltersResult {
     activeChips,
   };
 }
-
-export { RISK_BANDS };

@@ -1,16 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { RISK_VOCABULARY, type RiskBand } from "@/components/ttg/risk-vocabulary";
+import type { HolisticBand } from "@/lib/roster/holistic-band";
 
-const TONE_BY_BAND: Record<
-  RiskBand,
-  { color: string; tint: string; text: string }
-> = {
+const TONE_BY_BAND: Record<HolisticBand, { color: string; tint: string; text: string }> = {
   GREEN: { color: "var(--color-green)", tint: "var(--color-green-tint)", text: "#15803d" },
   YELLOW: { color: "var(--color-yellow)", tint: "var(--color-yellow-tint)", text: "#b45309" },
   RED: { color: "var(--color-red)", tint: "var(--color-red-tint)", text: "#b91c1c" },
-  LOCKED: {
+  ESCALATED: {
     color: "var(--color-escalated)",
     tint: "var(--color-escalated-tint)",
     text: "#6d28d9",
@@ -18,7 +15,7 @@ const TONE_BY_BAND: Record<
 };
 
 export interface FilterChipProps {
-  band: RiskBand;
+  band: HolisticBand;
   active: boolean;
   onToggle: () => void;
   label?: string;
@@ -35,7 +32,6 @@ export function FilterChip({
   touch,
 }: FilterChipProps) {
   const tone = TONE_BY_BAND[band];
-  const displayLabel = label ?? RISK_VOCABULARY[band].label;
 
   return (
     <button
@@ -70,7 +66,7 @@ export function FilterChip({
             }),
       }}
     >
-      {displayLabel}
+      {label ?? band}
     </button>
   );
 }
@@ -102,9 +98,7 @@ export function UtilityFilterChip({
         disabled ? "cursor-not-allowed opacity-60" : "",
         active
           ? "bg-olive-600 text-white"
-          : disabled
-            ? "bg-surface-inner text-text-secondary"
-            : "bg-surface-inner text-text-secondary hover:bg-olive-100 hover:text-text-primary",
+          : "bg-surface-inner text-text-secondary hover:bg-olive-100 hover:text-text-primary",
       ].join(" ")}
       style={{ minHeight: 32 }}
     >
