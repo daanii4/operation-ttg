@@ -1,19 +1,10 @@
 "use client";
 
-/**
- * Sprint 7 / Workstream A-6 — Data Feeds settings section.
- *
- * Owner-only. Shows the runtime status (ENABLED / DISABLED), the configured
- * provider, and the last successful ingestion. The Run ingestion button is
- * disabled when DATA_FEED_ENABLED !== "true" — there is intentionally no UI
- * toggle to enable/disable the pipeline; that requires an env var change to
- * prevent accidental activation.
- */
-
 import * as React from "react";
-import { CheckCircle2, Play, ShieldOff } from "lucide-react";
+import { RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/qn";
+import { SettingsCard, SettingsSectionHeader } from "@/lib/settings/settings-ui";
 
 interface FeedStatus {
   enabled: boolean;
@@ -29,19 +20,42 @@ interface FeedStatus {
 
 export interface SettingsDataFeedsSectionProps {
   initialStatus: FeedStatus | null;
-  /** Optional first student id from the cohort — used as the default Run target. */
   defaultStudentId: string | null;
 }
+
+function syncStatus(last: FeedStatus["lastIngestion"]): {
+  tone: "track" | "support" | "urgent";
+  label: string;
+} {
+  if (!last) {
+    return { tone: "support", label: "Never synced" };
+  }
+  const ageMs = Date.now() - new Date(last.completedAt).getTime();
+  const days = ageMs / (24 * 60 * 60 * 1000);
+  if (days > 9) {
+    return { tone: "support", label: `Stale — ${Math.round(days)} days` };
+  }
+  if (days > 2) {
+    return { tone: "support", label: `Synced ${Math.round(days)} days ago` };
+  }
+  const hours = Math.max(1, Math.round(ageMs / (60 * 60 * 1000)));
+  return { tone: "track", label: hours < 24 ? `Synced ${hours}h ago` : "Synced recently" };
+}
+
+const DOT_CLASS = {
+  track: "bg-[var(--status-track)]",
+  support: "bg-[var(--status-support)]",
+  urgent: "bg-[var(--status-urgent)]",
+} as const;
 
 export default function SettingsDataFeedsSection({
   initialStatus,
   defaultStudentId,
 }: SettingsDataFeedsSectionProps) {
   const [status, setStatus] = React.useState<FeedStatus | null>(initialStatus);
-  const [studentId, setStudentId] = React.useState<string>(
-    defaultStudentId ?? ""
-  );
-  const [running, setRunning] = React.useState(false);
+  const [studentId, setStudentId] = React.useState(defaultStudentId ?? "");
+  const [syncing, setSyncing] = React.useState(false);
+  const [syncError, setSyncError] = React.useState<string | null>(null);
 
   const refresh = React.useCallback(async () => {
     const res = await fetch("/api/settings/data-feeds", { cache: "no-store" });
@@ -51,223 +65,102 @@ export default function SettingsDataFeedsSection({
     }
   }, []);
 
-  const runIngestion = async () => {
+  const runSync = async () => {
     if (!studentId.trim()) {
-      toast.error("Enter a student ID to ingest");
+      toast.error("Enter a student ID to sync");
       return;
     }
-    setRunning(true);
+    setSyncError(null);
+    setSyncing(true);
     try {
       const res = await fetch(
         `/api/students/${encodeURIComponent(studentId.trim())}/ingest-transcript`,
         { method: "POST" }
       );
-      const data = (await res.json().catch(() => null)) as
-        | { error?: string; data?: { recordsWritten: number; status: string } }
-        | null;
-      if (!res.ok) {
-        throw new Error(
-          data?.error ??
-            `Ingestion failed (${res.status}). Confirm DATA_FEED_ENABLED is set.`
-        );
-      }
-      toast.success(
-        `Ingestion ${data?.data?.status ?? "complete"} — ${
-          data?.data?.recordsWritten ?? 0
-        } record(s) written`
-      );
+      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      if (!res.ok) throw new Error(data?.error ?? `Sync failed (${res.status})`);
+      toast.success("Sync completed", { duration: 3000 });
       await refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Ingestion failed");
+      const msg = err instanceof Error ? err.message : "Sync failed";
+      setSyncError(msg);
     } finally {
-      setRunning(false);
+      setSyncing(false);
     }
   };
 
+  const sync = syncStatus(status?.lastIngestion ?? null);
   const enabled = status?.enabled ?? false;
 
   return (
-    <section
-      style={{
-        background: "var(--color-bg)",
-        border: "1px solid var(--color-border)",
-        borderRadius: 8,
-        padding: 20,
-        marginTop: 16,
-      }}
-    >
-      <h2
-        className="font-serif"
-        style={{ fontSize: 18, lineHeight: "24px", color: "var(--color-text)" }}
-      >
-        Data feeds
-      </h2>
-      <p style={{ marginTop: 4, fontSize: 12, color: "var(--color-muted)" }}>
-        Class A verified-data-feed ingestion. The flag is controlled via the
-        deployment environment only — there is no UI toggle by design.
-      </p>
+    <SettingsCard>
+      <SettingsSectionHeader
+        title="Data feeds"
+        subtitle="Where transcript and grade data comes from"
+      />
 
-      <div
-        className="mt-4 grid gap-3"
-        style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}
-      >
-        <div
-          style={{
-            padding: 12,
-            background: "var(--color-row-alt)",
-            borderRadius: 6,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--color-muted)",
-            }}
-          >
-            Status
-          </div>
-          <div className="mt-1.5 flex items-center gap-2">
-            {enabled ? (
-              <CheckCircle2 size={16} aria-hidden style={{ color: "var(--color-green)" }} />
-            ) : (
-              <ShieldOff size={16} aria-hidden style={{ color: "var(--color-red)" }} />
-            )}
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: enabled ? "var(--color-green)" : "var(--color-red)",
-              }}
-            >
-              {enabled ? "ENABLED" : "DISABLED"}
-            </span>
-          </div>
-          <p
-            style={{
-              marginTop: 6,
-              fontSize: 11,
-              color: "var(--color-muted)",
-            }}
-          >
-            Set <code>DATA_FEED_ENABLED=true</code> in your deployment
-            environment to enable. Do not enable without legal review.
+      {!enabled ? (
+        <p className="mt-4 font-sans text-[13px] text-[var(--text-tertiary)]" role="status">
+          No data feed connected yet — connect a source to begin. Enable{" "}
+          <code className="font-mono text-[12px]">DATA_FEED_ENABLED</code> in deployment config.
+        </p>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-[var(--border-default)] bg-[var(--surface-inner)] px-4 py-3">
+        <span
+          className={["inline-block h-2.5 w-2.5 shrink-0 rounded-full", DOT_CLASS[sync.tone]].join(" ")}
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1">
+          <p className="font-sans text-[13px] font-semibold text-[var(--text-primary)]">
+            TranscriptAPI · {sync.label}
           </p>
+          {status?.lastIngestion ? (
+            <p className="font-mono text-[11px] text-[var(--text-tertiary)]">
+              {new Date(status.lastIngestion.completedAt).toLocaleString()} ·{" "}
+              {status.lastIngestion.recordsWritten} records written
+            </p>
+          ) : (
+            <p className="font-sans text-[12px] text-[var(--text-tertiary)]">
+              {status?.providerStatus === "stub-pending-mcp-2"
+                ? "Partnership pending (stub)"
+                : "Awaiting first successful sync"}
+            </p>
+          )}
         </div>
-        <div
-          style={{
-            padding: 12,
-            background: "var(--color-row-alt)",
-            borderRadius: 6,
-          }}
+        <Button
+          variant="outline"
+          icon={RefreshCcw}
+          loading={syncing}
+          loadingLabel="Syncing…"
+          disabled={!enabled || syncing}
+          onClick={runSync}
+          className="min-h-[44px]"
         >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--color-muted)",
-            }}
-          >
-            Provider
-          </div>
-          <div
-            className="mt-1.5"
-            style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}
-          >
-            TranscriptAPI
-          </div>
-          <p style={{ marginTop: 6, fontSize: 11, color: "var(--color-muted)" }}>
-            {status?.providerStatus === "stub-pending-mcp-2"
-              ? "Stub — partnership pending (MCP-2)"
-              : status?.providerStatus ?? "Unknown"}
-          </p>
-        </div>
+          Sync now
+        </Button>
       </div>
 
-      <div className="mt-4">
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            color: "var(--color-muted)",
-            marginBottom: 6,
-          }}
-        >
-          Last ingestion
-        </div>
-        {status?.lastIngestion ? (
-          <p style={{ fontSize: 13, color: "var(--color-text)" }}>
-            <span style={{ fontFamily: "var(--font-mono)" }}>
-              {new Date(status.lastIngestion.completedAt).toLocaleString()}
-            </span>
-            <span style={{ color: "var(--color-muted)", marginLeft: 8 }}>
-              · {status.lastIngestion.recordsWritten} record
-              {status.lastIngestion.recordsWritten === 1 ? "" : "s"} written ·
-              provider {status.lastIngestion.provider}
-            </span>
-          </p>
-        ) : (
-          <p style={{ fontSize: 13, color: "var(--color-muted)" }}>
-            No successful ingestion yet.
-          </p>
-        )}
-      </div>
-
-      <div
-        className="mt-4 flex flex-wrap items-end gap-2"
-        style={{
-          padding: 12,
-          background: "var(--color-row-alt)",
-          borderRadius: 6,
-        }}
-      >
-        <label className="flex flex-col gap-1" style={{ flex: 1, minWidth: 220 }}>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--color-muted)",
-            }}
-          >
-            Student ID
+      {enabled ? (
+        <label className="mt-4 flex flex-col gap-1">
+          <span className="font-sans text-[12px] font-medium text-[var(--text-secondary)]">
+            Student ID for manual sync
           </span>
           <input
             type="text"
             value={studentId}
             onChange={(e) => setStudentId(e.target.value)}
+            className="min-h-[44px] rounded-md border border-[var(--border-default)] bg-white px-3 font-mono text-[16px] text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--olive-600)]"
             placeholder="stu_marcus_001"
-            disabled={!enabled}
-            className="rounded-md border bg-white"
-            style={{
-              height: 36,
-              paddingLeft: 12,
-              paddingRight: 12,
-              fontSize: 13,
-              borderColor: "var(--color-border)",
-              color: "var(--color-text)",
-              fontFamily: "var(--font-mono)",
-            }}
           />
         </label>
-        <Button
-          variant="primary"
-          icon={Play}
-          onClick={runIngestion}
-          loading={running}
-          loadingLabel="Running…"
-          disabled={!enabled || running}
-        >
-          Run ingestion
-        </Button>
-      </div>
-    </section>
+      ) : null}
+
+      {syncError ? (
+        <p role="alert" className="mt-2 font-sans text-[12px] text-[var(--status-urgent)]">
+          {syncError}
+        </p>
+      ) : null}
+    </SettingsCard>
   );
 }

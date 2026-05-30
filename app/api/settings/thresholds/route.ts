@@ -45,6 +45,7 @@ export async function GET() {
 const patchSchema = z.object({
   key: z.string().min(1),
   value: z.number().finite(),
+  reason: z.string().max(500).optional(),
 });
 
 export async function PATCH(req: Request) {
@@ -73,12 +74,24 @@ export async function PATCH(req: Request) {
       );
     }
 
+    const previousValue = existing.value;
+
     const updated = await prismaTtg.thresholdConfig.update({
       where: { id: existing.id },
       data: {
         value: body.value,
         calibrated_by: session.userId,
         calibrated_at: new Date(),
+      },
+    });
+
+    await prismaTtg.thresholdAuditLog.create({
+      data: {
+        threshold_key: body.key,
+        previous_value: previousValue,
+        new_value: body.value,
+        changed_by: session.userId,
+        reason: body.reason?.trim() || null,
       },
     });
 
