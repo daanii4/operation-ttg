@@ -1,17 +1,23 @@
 "use client";
 
+/**
+ * Trajectory tab — academic trend only (F9 GPA + F5 core completion pace).
+ *
+ * AIMS and engagement signals live on Briefings and the student profile;
+ * they are intentionally excluded here so academic direction stays defensible.
+ */
+
 import * as React from "react";
-import { AlertCircle, Loader2, RefreshCcw } from "lucide-react";
+import { AlertCircle, RefreshCcw } from "lucide-react";
 import type { QnRosterRow } from "@/lib/cohort/qn-roster";
 import { Button } from "@/components/ui/qn";
 import StudentWorkspaceLayout from "@/components/dashboard/StudentWorkspaceLayout";
 import MobileStudentSelector from "@/components/dashboard/MobileStudentSelector";
 import MobileStudentPickerSheet from "@/components/dashboard/MobileStudentPickerSheet";
-import { useBriefingData } from "@/app/dashboard/briefings/_components/use-briefing-data";
+import { useBriefingData, type BriefingPayload } from "@/app/dashboard/briefings/_components/use-briefing-data";
 import GpaTrajectoryCard from "./_components/GpaTrajectoryCard";
-import AimsSignalCard from "./_components/AimsSignalCard";
-import EngagementCard from "./_components/EngagementCard";
-import RiskForecastCard from "./_components/RiskForecastCard";
+import CompletionPaceCard from "./_components/CompletionPaceCard";
+import { TrajectoryDirectionPanel } from "./_components/TrajectoryDirectionPanel";
 
 export interface TrajectoryPageClientProps {
   rows: QnRosterRow[];
@@ -22,6 +28,7 @@ export default function TrajectoryPageClient({ rows }: TrajectoryPageClientProps
     rows[0]?.studentId ?? null
   );
   const [pickerOpen, setPickerOpen] = React.useState(false);
+  const gpaDrawInPlayed = React.useRef(false);
   const briefing = useBriefingData(selectedId);
   const selected = React.useMemo(
     () => rows.find((r) => r.studentId === selectedId) ?? null,
@@ -29,14 +36,21 @@ export default function TrajectoryPageClient({ rows }: TrajectoryPageClientProps
   );
 
   return (
-    <>
+    <div className="mx-auto w-full max-w-[1280px] space-y-6 px-4 pt-6 desktop:px-6">
       <StudentWorkspaceLayout
         rows={rows}
         selectedId={selectedId}
         onSelect={setSelectedId}
         listTitle="Trajectory"
       >
-        <TrajectoryBody selected={selected} briefing={briefing} embedded />
+        <div className="p-6">
+          <TrajectoryBody
+            selected={selected}
+            briefing={briefing}
+            animateGpaDrawIn={!gpaDrawInPlayed.current}
+            gpaDrawInPlayed={gpaDrawInPlayed}
+          />
+        </div>
       </StudentWorkspaceLayout>
 
       <div className="md:hidden">
@@ -53,86 +67,108 @@ export default function TrajectoryPageClient({ rows }: TrajectoryPageClientProps
           selectedId={selectedId}
           onSelect={setSelectedId}
         />
-        <div className="px-4 pb-6 pt-4">
-          <TrajectoryBody selected={selected} briefing={briefing} />
+        <div className="pb-6">
+          <TrajectoryBody
+            selected={selected}
+            briefing={briefing}
+            animateGpaDrawIn={false}
+            gpaDrawInPlayed={gpaDrawInPlayed}
+          />
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
 function TrajectoryBody({
   selected,
   briefing,
-  embedded = false,
+  animateGpaDrawIn,
+  gpaDrawInPlayed,
 }: {
   selected: QnRosterRow | null;
   briefing: ReturnType<typeof useBriefingData>;
-  embedded?: boolean;
+  animateGpaDrawIn: boolean;
+  gpaDrawInPlayed: React.MutableRefObject<boolean>;
 }) {
-  const sectionVariant = embedded ? ("embedded" as const) : ("card" as const);
+  const [visible, setVisible] = React.useState(true);
+  const studentKey = selected?.studentId ?? "none";
 
-  if (!selected) return <NoSelection embedded={embedded} />;
-  if (briefing.status === "loading") return <LoadingTrajectory embedded={embedded} />;
+  React.useEffect(() => {
+    setVisible(false);
+    const t = window.setTimeout(() => setVisible(true), 16);
+    return () => window.clearTimeout(t);
+  }, [studentKey]);
+
+  if (!selected) return <NoSelection />;
+  if (briefing.status === "loading") return <LoadingTrajectory />;
   if (briefing.status === "error") {
-    return <ErrorTrajectory onRetry={briefing.refetch} message={briefing.error} embedded={embedded} />;
+    return <ErrorTrajectory onRetry={briefing.refetch} message={briefing.error} />;
   }
-  if (briefing.status === "empty" || !briefing.data) {
-    return <NoData embedded={embedded} />;
-  }
+  if (briefing.status === "empty" || !briefing.data) return <NoData />;
 
-  const sections = (
-    <>
-      <GpaTrajectoryCard
-        variant={sectionVariant}
-        f9={briefing.data.f9}
-        observations={briefing.data.observations?.grades ?? null}
-      />
-      <AimsSignalCard variant={sectionVariant} f10={briefing.data.f10} />
-      <EngagementCard variant={sectionVariant} f11={briefing.data.f11} />
-      <RiskForecastCard variant={sectionVariant} ml={briefing.data.ml} />
-    </>
-  );
+  const data = briefing.data as BriefingPayload;
+  const playGpaDrawIn =
+    animateGpaDrawIn &&
+    !!data.f9 &&
+    data.f9.evidence_tier !== "Insufficient";
+  if (playGpaDrawIn) gpaDrawInPlayed.current = true;
 
-  if (embedded) {
-    return <div className="[&>section:last-child]:border-b-0">{sections}</div>;
-  }
-
-  return <div className="flex flex-col gap-4">{sections}</div>;
-}
-
-function NoSelection({ embedded = false }: { embedded?: boolean }) {
   return (
     <div
-      role="status"
-      className={`text-center text-[var(--text-tertiary)] ${embedded ? "px-6 py-12" : "py-12"}`}
+      className="space-y-6 transition-opacity duration-[220ms] ease-[var(--ease-out)] motion-reduce:transition-none"
+      style={{ opacity: visible ? 1 : 0 }}
     >
-      <p className="font-sans text-base font-semibold text-[var(--text-primary)]">
-        Select a student
-      </p>
-      <p className="mt-1 font-sans text-[13px]">
-        Choose a student from the list to view their trajectory and signals.
+      <header className="border-b border-[color:var(--border-default)] pb-4">
+        <h2 className="font-serif text-[22px] text-text-primary">{selected.fullName}</h2>
+        <p className="mt-1 font-sans text-[13px] text-text-secondary">
+          Grade {selected.grade} · {selected.sport} · Academic trajectory
+        </p>
+      </header>
+
+      <div className="grid gap-6 desktop:grid-cols-12">
+        <div className="desktop:col-span-7">
+          <GpaTrajectoryCard
+            f9={data.f9}
+            observations={data.observations?.grades ?? null}
+            animateDrawIn={playGpaDrawIn}
+          />
+        </div>
+        <div className="desktop:col-span-5">
+          <CompletionPaceCard
+            f5={data.f5 ?? null}
+            courses={data.f5Courses ?? null}
+            studentId={selected.studentId}
+          />
+        </div>
+        <div className="desktop:col-span-12">
+          <TrajectoryDirectionPanel f9={data.f9} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NoSelection() {
+  return (
+    <div role="status" className="py-12 text-center">
+      <p className="font-sans text-base font-semibold text-text-primary">Select a student</p>
+      <p className="mt-1 font-sans text-[13px] text-text-tertiary">
+        Choose a student from the list to view GPA and core-completion pace.
       </p>
     </div>
   );
 }
 
-function LoadingTrajectory({ embedded = false }: { embedded?: boolean }) {
+function LoadingTrajectory() {
   return (
-    <div className={embedded ? "space-y-0 px-6 py-6" : "flex flex-col gap-4"}>
-      {[0, 1, 2, 3].map((i) => (
-        <div
-          key={i}
-          aria-hidden
-          className="animate-pulse bg-[var(--surface-inner)]"
-          style={{
-            width: "100%",
-            height: embedded ? 180 : 240,
-            borderBottom: embedded ? "1px solid var(--border-default)" : undefined,
-            borderRadius: embedded ? 0 : "var(--radius-default)",
-          }}
-        />
-      ))}
+    <div className="grid gap-6 desktop:grid-cols-12">
+      <div className="desktop:col-span-7">
+        <GpaTrajectoryCard f9={null} observations={null} />
+      </div>
+      <div className="desktop:col-span-5">
+        <CompletionPaceCard f5={null} courses={null} studentId="" loading />
+      </div>
     </div>
   );
 }
@@ -140,30 +176,22 @@ function LoadingTrajectory({ embedded = false }: { embedded?: boolean }) {
 function ErrorTrajectory({
   onRetry,
   message,
-  embedded = false,
 }: {
   onRetry: () => void;
   message: string | null;
-  embedded?: boolean;
 }) {
   return (
     <div
       role="alert"
-      className={embedded ? "mx-6 my-6" : undefined}
-      style={{
-        padding: "16px 20px",
-        background: "var(--color-red-tint)",
-        borderLeft: "3px solid var(--color-red)",
-        borderRadius: 6,
-      }}
+      className="rounded-md border-l-[3px] border-[color:var(--status-urgent)] bg-[var(--status-urgent-tint)] px-5 py-4"
     >
       <div className="flex items-start gap-2">
-        <AlertCircle size={20} aria-hidden className="text-[var(--color-red)]" />
+        <AlertCircle size={20} className="text-[color:var(--status-urgent)]" aria-hidden />
         <div>
-          <p className="font-sans text-base font-semibold text-[var(--text-primary)]">
-            Couldn't load trajectory
+          <p className="font-sans text-base font-semibold text-text-primary">
+            Couldn&apos;t load trajectory
           </p>
-          <p className="mt-0.5 font-sans text-[12px] text-[var(--color-red)]">
+          <p className="mt-0.5 font-sans text-[12px] text-[color:var(--status-urgent)]">
             {message ?? "Check your connection and try again."}
           </p>
           <div className="mt-3">
@@ -177,22 +205,12 @@ function ErrorTrajectory({
   );
 }
 
-function NoData({ embedded = false }: { embedded?: boolean }) {
+function NoData() {
   return (
-    <div
-      role="status"
-      className={`text-center text-[var(--text-tertiary)] ${embedded ? "px-6 py-12" : "py-12"}`}
-    >
-      <Loader2
-        size={20}
-        aria-hidden
-        className="mx-auto animate-spin text-[var(--text-tertiary)]"
-      />
-      <p className="mt-3 font-sans text-base font-semibold text-[var(--text-primary)]">
-        No trajectory data yet
-      </p>
-      <p className="mt-1 font-sans text-[13px]">
-        Trajectory and AIMS data are populated as new observations land.
+    <div role="status" className="py-12 text-center">
+      <p className="font-sans text-base font-semibold text-text-primary">No trajectory data yet</p>
+      <p className="mt-1 font-sans text-[13px] text-text-tertiary">
+        GPA and core pace populate as grade updates and transcript records arrive.
       </p>
     </div>
   );

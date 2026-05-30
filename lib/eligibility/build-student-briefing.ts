@@ -21,6 +21,7 @@ import { calcEligibilitySummary } from "@/lib/calculations/f8";
 import {
   calcNcaa107Status,
   type F5CourseRecord,
+  type F5Result,
   type F5SchoolCalendar,
   type F5StudentInput,
 } from "@/lib/calculations/f5";
@@ -52,6 +53,8 @@ export interface StudentBriefingHeader {
 export interface StudentBriefingRecord {
   header: StudentBriefingHeader;
   bundle: EligibilityBundle;
+  f5: F5Result;
+  f5Courses: F5CourseRecord[];
   f8: F8Result;
   f9: F9Result;
   f10: F10Result;
@@ -411,6 +414,8 @@ export async function buildStudentBriefing(
         highSchoolName: student.highSchoolName,
       },
       bundle,
+      f5,
+      f5Courses: courses,
       f8,
       f9,
       f10,
