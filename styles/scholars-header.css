@@ -1,5 +1,5 @@
 /**
- * App chrome header — Operation Scholars OS layout (TTG shell).
+ * App chrome header — Operation TTG layout (TTG shell).
  * Loaded once from app/layout.tsx (not inlined in React) to avoid hydration mismatches:
  * React escapes `<style>` children differently on server vs client.
  */

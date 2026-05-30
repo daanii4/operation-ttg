@@ -296,7 +296,7 @@ export function DashboardShell({
                       className="text-[15px] font-normal leading-tight tracking-[-0.01em] text-white"
                       style={{ fontFamily: "var(--font-dm-serif), Georgia, serif" }}
                     >
-                      Operation Scholars
+                      Operation TTG
                     </p>
                     <p
                       className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.08em]"
@@ -374,7 +374,7 @@ export function DashboardShell({
               className="text-[14px] font-normal leading-tight text-white"
               style={{ fontFamily: "var(--font-dm-serif), Georgia, serif" }}
             >
-              Operation Scholars
+              Operation TTG
             </p>
             <p
               className="mt-0.5 text-[8px] uppercase tracking-[0.1em]"
