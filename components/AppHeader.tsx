@@ -1,5 +1,5 @@
 /**
- * AppHeader — branded olive header (Operation Scholars OS chrome).
+ * AppHeader — branded olive header (Operation TTG chrome).
  * Styles live in styles/scholars-header.css (imported from app/layout.tsx), not inlined here,
  * so server HTML matches client hydration (React escapes inline <style> text differently).
  */
@@ -107,7 +107,7 @@ export function AppHeader({
             <img src="/logo-mark.png" alt="" className="scholars-header__logo" width={34} height={34} />
           </Link>
           <div className="scholars-header__brand-text">
-            <span className="scholars-header__wordmark os-subhead">Operation Scholars</span>
+            <span className="scholars-header__wordmark">Operation TTG</span>
             <span className="scholars-header__tag">STUDENT INTELLIGENCE OS</span>
           </div>
         </div>

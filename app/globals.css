@@ -90,38 +90,52 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.10), 0 4px 6px -4px rgb(0 0 0 / 0.06);
   --shadow-primary: 0 4px 14px 0 rgb(92 107 70 / 0.18);
 
-  /* === TTG additions: trajectory + action risk tokens === */
-  --band-track:   #2563EB;
-  --band-support: #D97706;
-  --band-urgent:  #9333EA;
-  --band-pivot:   #475569;
+  /* ── CANONICAL STATUS SPINE (green = good → red = bad) ─────────────── */
+  --status-track:      #16A34A;
+  --status-support:    #D97706;
+  --status-urgent:     #DC2626;
+  --status-escalated:  #7C3AED;
 
-  --band-track-fill:    rgba(37, 99, 235, 0.12);
-  --band-track-border:  rgba(37, 99, 235, 0.30);
-  --band-support-fill:  rgba(217, 119, 6, 0.12);
-  --band-support-border:rgba(217, 119, 6, 0.30);
-  --band-urgent-fill:   rgba(147, 51, 234, 0.12);
-  --band-urgent-border: rgba(147, 51, 234, 0.30);
-  --band-pivot-fill:    rgba(71, 85, 105, 0.14);
-  --band-pivot-border:  rgba(71, 85, 105, 0.30);
+  --status-track-tint:     #F0FDF4;
+  --status-support-tint:   #FFFBEB;
+  --status-urgent-tint:    #FEF2F2;
+  --status-escalated-tint: #F5F3FF;
 
-  /* Backward-compatible aliases for existing utility classes. */
-  --band-green:         var(--band-track);
-  --band-yellow:        var(--band-support);
-  --band-red:           var(--band-urgent);
-  --band-locked:        var(--band-pivot);
-  --band-green-fill:    var(--band-track-fill);
-  --band-green-border:  var(--band-track-border);
-  --band-yellow-fill:   var(--band-support-fill);
-  --band-yellow-border: var(--band-support-border);
-  --band-red-fill:      var(--band-urgent-fill);
-  --band-red-border:    var(--band-urgent-border);
-  --band-locked-fill:   var(--band-pivot-fill);
-  --band-locked-border: var(--band-pivot-border);
+  --status-track-border:     rgba(22, 163, 74, 0.30);
+  --status-support-border:   rgba(217, 119, 6, 0.30);
+  --status-urgent-border:    rgba(220, 38, 38, 0.30);
+  --status-escalated-border: rgba(124, 58, 237, 0.30);
 
-  /* TTG AIMS / escalation accent — paired components reference these */
-  --color-escalation: #991b1b;
-  --color-escalation-fill: rgba(153, 27, 27, 0.08);
+  --safety-stroke: #991b1b;
+  --safety-fill:   rgba(153, 27, 27, 0.08);
+
+  --band-track:         var(--status-track);
+  --band-support:       var(--status-support);
+  --band-urgent:        var(--status-urgent);
+  --band-pivot:         var(--status-escalated);
+  --band-track-fill:    var(--status-track-tint);
+  --band-track-border:  var(--status-track-border);
+  --band-support-fill:  var(--status-support-tint);
+  --band-support-border:var(--status-support-border);
+  --band-urgent-fill:   var(--status-urgent-tint);
+  --band-urgent-border: var(--status-urgent-border);
+  --band-pivot-fill:    var(--status-escalated-tint);
+  --band-pivot-border:  var(--status-escalated-border);
+  --band-green:         var(--status-track);
+  --band-yellow:        var(--status-support);
+  --band-red:           var(--status-urgent);
+  --band-locked:        var(--status-escalated);
+  --band-green-fill:    var(--status-track-tint);
+  --band-green-border:  var(--status-track-border);
+  --band-yellow-fill:   var(--status-support-tint);
+  --band-yellow-border: var(--status-support-border);
+  --band-red-fill:      var(--status-urgent-tint);
+  --band-red-border:    var(--status-urgent-border);
+  --band-locked-fill:   var(--status-escalated-tint);
+  --band-locked-border: var(--status-escalated-border);
+
+  --color-escalation: var(--safety-stroke);
+  --color-escalation-fill: var(--safety-fill);
 
   /* === QuasarNova v1 — Roster + Briefings spec (May 2026) ===========
    * Single source of truth for the Roster and Briefings tabs. Do not reuse
