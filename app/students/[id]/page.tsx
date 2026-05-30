@@ -1,60 +1,68 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { getTtgSession } from "@/lib/auth/session";
+import { prismaTtg } from "@/lib/prisma";
+import { loadStudentProfile } from "@/lib/students/load-student-profile";
 import DashboardShell from "@/components/layout/DashboardShell";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import StudentProfileClient from "./StudentProfileClient";
-import { computeAllDemoResults } from "@/lib/seed/demo-data";
-import { getHolisticProfile } from "@/lib/seed/holistic-data";
-import { attachOverallRisk } from "@/lib/calculations/holistic-rollup";
-import { getTtgSession } from "@/lib/auth/session";
 
-export const metadata: Metadata = {
-  title: "Student Profile · Operation TTG",
-};
-
-export default async function StudentProfilePage({
-  params,
-}: {
+interface Props {
   params: { id: string };
-}) {
-  const session = await getTtgSession();
-  const allResults = computeAllDemoResults();
-  const found = allResults.find((r) => r.studentId === params.id);
+}
 
-  if (!found) notFound();
-
-  const serialized = {
-    ...found,
-    highSchoolId: found.highSchoolId,
-    courses: found.courses.map((course) => ({
-      id: course.id,
-      courseName: course.courseName,
-      ncaaD1Category: course.ncaaD1Category,
-    })),
-    f5: {
-      ...found.f5,
-      lockInDate: found.f5.lockInDate?.toISOString() ?? null,
-      computedAt: found.f5.computedAt.toISOString(),
-    },
-    holistic: attachOverallRisk(
-      getHolisticProfile(found.studentId),
-      found.f5.applicable ? found.f5.riskBand : "NOT_APPLICABLE"
-    ),
-    isDemoStudent: true,
-    sessionUserId: session?.userId ?? null,
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const row = await prismaTtg.studentAthlete
+    .findUnique({
+      where: { id: params.id },
+      select: { firstName: true, lastName: true },
+    })
+    .catch(() => null);
+  if (!row) {
+    return { title: "Student · Operation TTG" };
+  }
+  return {
+    title: `${row.firstName} ${row.lastName} · Operation TTG`,
   };
+}
 
-  const fullName = `${found.firstName} ${found.lastName}`;
+export default async function StudentProfilePage({ params }: Props) {
+  const session = await getTtgSession();
+  if (!session) {
+    redirect(`/login?redirectTo=${encodeURIComponent(`/students/${params.id}`)}`);
+  }
+
+  const result = await loadStudentProfile(params.id, session);
+  if (result.kind === "redirect") {
+    redirect(`/login?redirectTo=${encodeURIComponent(`/students/${params.id}`)}`);
+  }
+  if (result.kind === "notFound") {
+    notFound();
+  }
+
+  const { student, eligibility, teamRole, sessionUserId } = result;
+  const fullName = `${student.firstName} ${student.lastName}`;
 
   return (
-    <DashboardShell omitAppHeader pageTitle={fullName}>
+    <DashboardShell
+      eyebrow="STUDENT"
+      pageTitle={fullName}
+      pageSubtitle={`${student.highSchoolName}${student.districtName ? ` · ${student.districtName}` : ""}`}
+      hideHeaderTitle
+    >
       <Breadcrumb
         items={[
-          { label: "Cohort Dashboard", href: "/dashboard/analytics" },
+          { label: "Operation TTG", href: "/" },
+          { label: "Roster", href: "/dashboard/roster" },
           { label: fullName },
         ]}
       />
-      <StudentProfileClient data={serialized} />
+      <StudentProfileClient
+        student={student}
+        eligibility={eligibility}
+        teamRole={teamRole}
+        sessionUserId={sessionUserId}
+      />
     </DashboardShell>
   );
 }

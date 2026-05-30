@@ -1,458 +1,329 @@
 "use client";
+
 import * as React from "react";
 import Link from "next/link";
-import type { F5Result } from "@/lib/calculations/f5";
-import type { F8Result, F12Result } from "@/lib/calculations/types";
-import IdentityHeader from "@/components/ttg/IdentityHeader";
-import ProvisionalAlert from "@/components/ttg/ProvisionalAlert";
-import TenSevenPanel from "@/components/ttg/TenSevenPanel";
-import DualFlagAlert from "@/components/ttg/DualFlagAlert";
-import RecommendedCourses from "@/components/ttg/RecommendedCourses";
-import EvidenceFootnote from "@/components/ttg/EvidenceFootnote";
-import DerivationModal from "@/components/ttg/DerivationModal";
-import HolisticHealthStrip from "@/components/ttg/HolisticHealthStrip";
-import MentalHealthAlert from "@/components/ttg/MentalHealthAlert";
-import FallbackPathwayPanel from "@/components/ttg/FallbackPathwayPanel";
-import NcaaEligibilityCenterStatus from "@/components/ttg/NcaaEligibilityCenterStatus";
-import NcaaApprovedCoursesPanel from "@/components/ttg/NcaaApprovedCoursesPanel";
-import EligibilityPanels from "@/components/ttg/EligibilityPanels";
-import type { HolisticStudentRisk } from "@/lib/calculations/holistic-rollup";
-import { escalationLabel } from "@/lib/calculations/escalation-labels";
+import { useRouter } from "next/navigation";
+import type { AdvisorRole } from "@prisma/client";
+import { ArrowLeft } from "lucide-react";
+import { ActionWindowPill, BandBadge, Button, type Band } from "@/components/ui/qn";
+import { ExportPDFButton } from "@/app/dashboard/briefings/_components/ExportPDFButton";
+import { hasPermission } from "@/lib/auth/ttg-permissions";
+import { mlRiskTierLabel } from "@/lib/calculations/display-labels";
+import { ProfileOverviewTab } from "./_components/ProfileOverviewTab";
+import { ProfileEligibilityTab } from "./_components/ProfileEligibilityTab";
+import { ProfileTrajectoryTab } from "./_components/ProfileTrajectoryTab";
+import { ProfileTranscriptTab } from "./_components/ProfileTranscriptTab";
+import type {
+  ProfileEligibilityPayload,
+  ProfileStudent,
+  ProfileTab,
+} from "./profile-types";
 import {
-  aimsFlagLabel,
-  aimsRiskLabel,
-  engagementTrendLabel,
-  trajectoryDirectionLabel,
-} from "@/lib/calculations/display-labels";
-import { INTERVENTION_LABELS } from "@/lib/calculations/intervention-labels";
+  formatTargetDivision,
+  gradeToGradYear,
+  profileQuickStats,
+  studentInitials,
+} from "./profile-utils";
 
-type ProfileData = {
-  studentId: string;
-  firstName: string;
-  lastName: string;
-  sport: string;
-  grade: number;
-  highSchoolId: string;
-  highSchoolName: string;
-  targetDivision: string;
-  courses: Array<{
-    id: string;
-    courseName: string;
-    ncaaD1Category: string | null;
-  }>;
-  f5: Omit<F5Result, "lockInDate" | "computedAt"> & {
-    lockInDate: string | null;
-    computedAt: string;
-  };
-  holistic: HolisticStudentRisk;
-  isDemoStudent: boolean;
-  sessionUserId: string | null;
-};
+const TABS: Array<{ id: ProfileTab; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "eligibility", label: "Eligibility" },
+  { id: "trajectory", label: "Trajectory" },
+  { id: "transcript", label: "Transcript" },
+];
 
-type EligibilityPayload = {
-  f1: unknown;
-  f2: unknown;
-  f3: unknown;
-  f4: unknown;
-  f6: unknown;
-  f7: unknown;
-  f8?: F8Result;
-  f12?: F12Result;
-};
+export interface StudentProfileClientProps {
+  student: ProfileStudent;
+  eligibility: ProfileEligibilityPayload | null;
+  teamRole: AdvisorRole;
+  sessionUserId: string;
+}
 
-type DerivationField = "daysToLock" | "cores" | "emsSubset" | "riskBand";
+export default function StudentProfileClient({
+  student,
+  eligibility: initialEligibility,
+  teamRole,
+  sessionUserId,
+}: StudentProfileClientProps) {
+  const router = useRouter();
+  const [tab, setTab] = React.useState<ProfileTab>("overview");
+  const [eligibility, setEligibility] = React.useState(initialEligibility);
 
-const FIELD_TITLES: Record<DerivationField, string> = {
-  daysToLock: "Days to Lock — Derivation",
-  cores:      "Cores Complete — Derivation",
-  emsSubset:  "Eng / Math / Sci Subset — Derivation",
-  riskBand:   "Risk Band — Derivation",
-};
+  const canEdit = hasPermission(teamRole, "student:write");
+  const fullName = `${student.firstName} ${student.lastName}`;
+  const gradYear = gradeToGradYear(student.grade);
+  const stats = profileQuickStats(student, eligibility);
+  const band = eligibility?.f8?.composite_band as Band | undefined;
+  const weeks = eligibility?.f12?.weeks_to_critical_action ?? null;
 
-export default function StudentProfileClient({ data }: { data: ProfileData }) {
-  const { f5 } = data;
-  const [field, setField] = React.useState<DerivationField | null>(null);
-  const [eligibility, setEligibility] = React.useState<EligibilityPayload | null>(null);
-  const [ackLoading, setAckLoading] = React.useState(false);
-  const [ackError, setAckError] = React.useState<string | null>(null);
-
-  const loadEligibility = React.useCallback(async () => {
+  const refreshEligibility = React.useCallback(async () => {
     try {
-      const response = await fetch(`/api/students/${data.studentId}/eligibility`, {
-        method: "GET",
+      const res = await fetch(`/api/students/${student.id}/eligibility`, {
         cache: "no-store",
       });
-      if (!response.ok) return;
-      const payload = (await response.json()) as EligibilityPayload;
+      if (!res.ok) return;
+      const payload = (await res.json()) as ProfileEligibilityPayload;
       setEligibility(payload);
     } catch {
-      // no-op; profile remains usable with fallback state
+      // profile remains on last known eligibility
     }
-  }, [data.studentId]);
-
-  React.useEffect(() => {
-    loadEligibility();
-  }, [loadEligibility]);
-
-  const fallbackBandFromHolistic =
-    data.holistic.overallRisk === "CRITICAL"
-      ? "RED"
-      : data.holistic.overallRisk === "AT_RISK"
-        ? "YELLOW"
-        : "GREEN";
-
-  const displayRiskBand =
-    !data.isDemoStudent && eligibility?.f8?.composite_band
-      ? eligibility.f8.composite_band
-      : fallbackBandFromHolistic;
-
-  const escalationState = eligibility?.f8;
-  const masterBriefing = eligibility?.f12;
-  const showEscalationOverlay =
-    escalationState?.escalation_required === true &&
-    escalationState.acknowledgment_state !== "acknowledged";
-
-  async function acknowledgeEscalation() {
-    if (!eligibility) return;
-    setAckError(null);
-    setAckLoading(true);
-    try {
-      const acknowledgedAt = new Date().toISOString();
-      const bandTransition = "RED→YELLOW";
-      if (!data.sessionUserId) {
-        throw new Error("Session missing. Please sign in again.");
-      }
-
-      const raw = `${data.studentId}${data.sessionUserId}${bandTransition}${acknowledgedAt}`;
-      const encoded = new TextEncoder().encode(raw);
-      const digest = await crypto.subtle.digest("SHA-256", encoded);
-      const signature = Array.from(new Uint8Array(digest))
-        .map((byte) => byte.toString(16).padStart(2, "0"))
-        .join("");
-
-      const response = await fetch(`/api/students/${data.studentId}/acknowledge-escalation`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          band_transition: bandTransition,
-          cryptographic_signature: signature,
-          acknowledged_at: acknowledgedAt,
-          conditions_snapshot: {
-            f1: eligibility.f1,
-            f2: eligibility.f2,
-            f3: eligibility.f3,
-            f4: eligibility.f4,
-            f6: eligibility.f6,
-            f7: eligibility.f7,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Acknowledgment failed.");
-      }
-
-      await loadEligibility();
-    } catch (error) {
-      setAckError(error instanceof Error ? error.message : "Acknowledgment failed.");
-    } finally {
-      setAckLoading(false);
-    }
-  }
-
-  const lockInDate = f5.lockInDate
-    ? new Date(f5.lockInDate).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
-    : "—";
-
-  const provisionalReason =
-    f5.lockInDateBasis === "fallback_estimate_grade9_plus_3yr"
-      ? "Lock-in date estimated from grade 9 enrollment (school calendar not on file). Confirm with school registrar."
-      : "One or more course classifications are over 365 days old. Re-verify with NCAA Eligibility Center.";
-
-  const evidenceTier: "Deterministic" | "Provisional" =
-    f5.evidenceTier === "Deterministic" ? "Deterministic" : "Provisional";
-
-  const derivationBody: Record<DerivationField, string> = {
-    daysToLock: f5.derivation.daysToLockExplanation,
-    cores:      f5.derivation.completedCountExplanation,
-    emsSubset:  f5.derivation.completedCountExplanation,
-    riskBand:   f5.derivation.riskBandExplanation,
-  };
-
-  const riskBand = (f5.applicable ? f5.riskBand : "NOT_APPLICABLE") as
-    | "GREEN" | "YELLOW" | "RED" | "LOCKED" | "NOT_APPLICABLE";
+  }, [student.id]);
 
   return (
-    <div className="relative">
-      {showEscalationOverlay ? (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/65 p-4">
-          <div className="w-full max-w-xl rounded-lg border border-band-urgent-border bg-surface-card p-6 shadow-2xl">
-            <h2 className="font-serif text-[22px] text-text-primary">Escalation review required</h2>
-            <p className="mt-2 font-sans text-[13px] text-text-secondary">
-              {escalationLabel(escalationState?.escalation_reason ?? null)}
-            </p>
-            {ackError ? (
-              <p className="mt-3 font-sans text-[12px] text-band-urgent">{ackError}</p>
+    <div className="flex flex-col gap-4">
+      {/* Header */}
+      <div className="flex flex-col gap-3 border-b border-[var(--border-default)] pb-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard/roster")}
+            className="inline-flex shrink-0 items-center gap-1 font-sans text-[13px] font-medium text-[var(--olive-600)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--olive-600)]"
+          >
+            <ArrowLeft size={16} aria-hidden />
+            Roster
+          </button>
+          <h1 className="truncate font-serif text-[22px] text-[var(--text-primary)] md:text-[26px]">
+            {fullName}
+          </h1>
+          {band ? <BandBadge band={band} className="shrink-0" /> : null}
+        </div>
+        <ExportPDFButton
+          studentId={student.id}
+          studentName={fullName}
+          filenameHint={`${student.lastName}-${student.firstName}`}
+        />
+      </div>
+
+      {/* Mobile compact student strip */}
+      <div className="flex items-center gap-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] p-3 md:hidden">
+        <InitialsAvatar first={student.firstName} last={student.lastName} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-sans text-[14px] font-semibold text-[var(--text-primary)]">
+            {student.sport}
+          </p>
+          <p className="truncate font-sans text-[12px] text-[var(--text-tertiary)]">
+            {student.highSchoolName}
+          </p>
+        </div>
+        {weeks != null && weeks <= 4 ? (
+          <ActionWindowPill weeks={weeks} />
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        {/* Left panel — desktop */}
+        <aside className="hidden w-[240px] shrink-0 lg:block">
+          <StudentInfoPanel
+            student={student}
+            gradYear={gradYear}
+            stats={stats}
+            band={band}
+            weeks={weeks}
+            eligibility={eligibility}
+            canEdit={canEdit}
+          />
+        </aside>
+
+        {/* Right panel */}
+        <div className="min-w-0 flex-1">
+          <div
+            role="tablist"
+            aria-label="Student profile sections"
+            className="qn-no-scrollbar mb-4 flex gap-1 overflow-x-auto border-b border-[var(--border-default)]"
+          >
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.id}
+                onClick={() => setTab(t.id)}
+                className={[
+                  "shrink-0 border-b-2 px-3 py-2 font-sans text-[13px] font-medium transition-colors",
+                  tab === t.id
+                    ? "border-[var(--olive-600)] text-[var(--text-primary)]"
+                    : "border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]",
+                ].join(" ")}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div role="tabpanel">
+            {tab === "overview" ? (
+              <ProfileOverviewTab
+                studentId={student.id}
+                eligibility={eligibility}
+                sessionUserId={sessionUserId}
+                onEligibilityRefresh={refreshEligibility}
+              />
             ) : null}
-            <button
-              type="button"
-              onClick={acknowledgeEscalation}
-              disabled={ackLoading}
-              className="mt-5 rounded bg-gold-500 px-4 py-2.5 font-sans text-[13px] font-semibold text-[#1a1f14] transition-opacity hover:opacity-90 disabled:opacity-60"
-            >
-              {ackLoading ? "Acknowledging..." : "I acknowledge and will take action"}
-            </button>
+            {tab === "eligibility" ? (
+              <ProfileEligibilityTab student={student} eligibility={eligibility} />
+            ) : null}
+            {tab === "trajectory" ? (
+              <ProfileTrajectoryTab eligibility={eligibility} />
+            ) : null}
+            {tab === "transcript" ? (
+              <ProfileTranscriptTab student={student} canEdit={canEdit} />
+            ) : null}
           </div>
         </div>
-      ) : null}
+      </div>
+    </div>
+  );
+}
 
-      <div className={showEscalationOverlay ? "pointer-events-none select-none opacity-40" : ""}>
-      <div className="mt-6">
-        <IdentityHeader
-          firstName={data.firstName}
-          lastName={data.lastName}
-          grade={data.grade}
-          sport={data.sport}
-          highSchool={data.highSchoolName}
-          targetDivision={data.targetDivision}
-          riskBand={displayRiskBand}
-        />
+function StudentInfoPanel({
+  student,
+  gradYear,
+  stats,
+  band,
+  weeks,
+  eligibility,
+  canEdit,
+}: {
+  student: ProfileStudent;
+  gradYear: number;
+  stats: { gpa: string; credits: string };
+  band?: Band;
+  weeks: number | null;
+  eligibility: ProfileEligibilityPayload | null;
+  canEdit: boolean;
+}) {
+  return (
+    <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
+      <div className="flex flex-col items-center text-center">
+        <InitialsAvatar first={student.firstName} last={student.lastName} size={48} />
+        <p className="mt-3 font-sans text-[16px] font-semibold text-[var(--text-primary)]">
+          {student.firstName} {student.lastName}
+        </p>
+        <p className="mt-0.5 font-sans text-[13px] text-[var(--text-tertiary)]">{student.sport}</p>
+        <p className="font-sans text-[12px] text-[var(--text-tertiary)]">{student.highSchoolName}</p>
+        {student.districtName ? (
+          <p className="font-sans text-[11px] text-[var(--text-quaternary)]">{student.districtName}</p>
+        ) : null}
       </div>
 
-      <div className="mt-6">
-        <MentalHealthAlert holistic={data.holistic} />
+      <div className="mt-4 grid grid-cols-2 gap-2 border-t border-[var(--border-default)] pt-4">
+        <StatCell label="Grad year" value={String(gradYear)} />
+        <StatCell label="Division" value={formatTargetDivision(student.targetDivision)} />
+        <StatCell label="GPA" value={stats.gpa} mono />
+        <StatCell label="Credits" value={stats.credits} mono />
       </div>
 
-      {f5.provisionalFlag && (
-        <div className="mt-6">
-          <ProvisionalAlert reason={provisionalReason} />
-        </div>
-      )}
-
-      <div className="mt-6">
-        <HolisticHealthStrip holistic={data.holistic} />
-      </div>
-
-      <div className="mt-6">
-        <NcaaEligibilityCenterStatus studentId={data.studentId} />
-      </div>
-
-      <div className="mt-6" id="transcript">
-        <div className="mb-3 flex justify-end gap-2">
-          <Link
-            href={`/students/${data.studentId}/engagement/new`}
-            className="rounded border border-[color:var(--border-default)] px-3 py-1.5 font-sans text-[12px] font-semibold text-text-primary transition-colors hover:bg-surface-inner"
-          >
-            Add engagement observation
-          </Link>
-          <Link
-            href={`/students/${data.studentId}/transcript/new`}
-            className="rounded border border-[color:var(--border-default)] px-3 py-1.5 font-sans text-[12px] font-semibold text-text-primary transition-colors hover:bg-surface-inner"
-          >
-            Add transcript course
-          </Link>
-          <Link
-            href={`/students/${data.studentId}/transcript/ocr`}
-            className="rounded border border-[color:var(--border-default)] px-3 py-1.5 font-sans text-[12px] font-semibold text-text-primary transition-colors hover:bg-surface-inner"
-          >
-            Upload transcript
-          </Link>
-        </div>
-        <NcaaApprovedCoursesPanel
-          highSchoolId={data.highSchoolId}
-          highSchoolName={data.highSchoolName}
-          studentCourses={data.courses}
-        />
-      </div>
-
-      {masterBriefing ? (
-        <div className="mt-6 rounded-lg border border-[color:var(--border-default)] bg-surface-card p-4">
-          <details open>
-            <summary className="cursor-pointer list-none">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-serif text-[20px] text-text-primary">Master briefing</p>
-                  <p className="font-sans text-[12px] text-text-secondary">
-                    {data.firstName} {data.lastName} · {masterBriefing.composite_band}
-                  </p>
-                </div>
-                {masterBriefing.weeks_to_critical_action === null ? (
-                  <span className="rounded-full border border-band-positive-border bg-band-positive/20 px-3 py-1 font-sans text-[12px] font-semibold text-band-positive">
-                    No critical action window
-                  </span>
-                ) : (
-                  <span
-                    className={`rounded-full border px-3 py-1 font-sans text-[12px] font-semibold ${
-                      masterBriefing.weeks_to_critical_action <= 1
-                        ? "border-band-urgent-border bg-band-urgent/20 text-band-urgent"
-                        : "border-band-watch-border bg-band-watch/20 text-band-watch"
-                    }`}
-                  >
-                    Action required in {masterBriefing.weeks_to_critical_action} week
-                    {masterBriefing.weeks_to_critical_action === 1 ? "" : "s"}
-                  </span>
-                )}
-              </div>
-            </summary>
-
-            <div className="mt-4 space-y-4">
-              <div>
-                <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.06em] text-text-tertiary">
-                  Intervention priorities
-                </p>
-                <ol className="mt-2 space-y-1">
-                  {masterBriefing.intervention_codes.map((code) => (
-                    <li
-                      key={code}
-                      className={`font-sans text-[13px] ${
-                        code === "NO_ACTION_REQUIRED" ? "text-band-positive" : "text-text-primary"
-                      }`}
-                    >
-                      {INTERVENTION_LABELS[code]}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-
-              <div className="overflow-x-auto rounded border border-[color:var(--border-default)]">
-                <table className="w-full min-w-[640px] border-collapse">
-                  <thead className="bg-surface-inner">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-sans text-[11px] uppercase tracking-[0.06em] text-text-tertiary">Layer</th>
-                      <th className="px-3 py-2 text-left font-sans text-[11px] uppercase tracking-[0.06em] text-text-tertiary">Status</th>
-                      <th className="px-3 py-2 text-left font-sans text-[11px] uppercase tracking-[0.06em] text-text-tertiary">Flag</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-t border-[color:var(--border-default)]">
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-primary">Eligibility</td>
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-primary">{masterBriefing.layer_summary.eligibility.band}</td>
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-secondary">{masterBriefing.layer_summary.eligibility.flag ?? "—"}</td>
-                    </tr>
-                    <tr className="border-t border-[color:var(--border-default)]">
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-primary">GPA</td>
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-primary">{masterBriefing.layer_summary.gpa.band}</td>
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-secondary">{masterBriefing.layer_summary.gpa.flag ?? "—"}</td>
-                    </tr>
-                    <tr className="border-t border-[color:var(--border-default)]">
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-primary">Trajectory</td>
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-primary">
-                        {trajectoryDirectionLabel(masterBriefing.layer_summary.trajectory.direction)}
-                      </td>
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-secondary">
-                        {masterBriefing.layer_summary.trajectory.regression ? "Regression flagged" : "—"}
-                      </td>
-                    </tr>
-                    <tr className="border-t border-[color:var(--border-default)]">
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-primary">AIMS</td>
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-primary">
-                        {aimsRiskLabel(masterBriefing.layer_summary.aims.risk_band)}
-                      </td>
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-secondary">
-                        {masterBriefing.layer_summary.aims.flags[0] ? aimsFlagLabel(masterBriefing.layer_summary.aims.flags[0]) : "—"}
-                      </td>
-                    </tr>
-                    <tr className="border-t border-[color:var(--border-default)]">
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-primary">Engagement</td>
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-primary">
-                        {engagementTrendLabel(masterBriefing.layer_summary.engagement.trend)}
-                      </td>
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-secondary">
-                        {masterBriefing.layer_summary.engagement.withdrawal
-                          ? "Withdrawal pattern detected"
-                          : masterBriefing.layer_summary.engagement.low
-                            ? "Low engagement"
-                            : "—"}
-                      </td>
-                    </tr>
-                    <tr className="border-t border-[color:var(--border-default)]">
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-primary">Composite</td>
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-primary">{masterBriefing.layer_summary.composite.band}</td>
-                      <td className="px-3 py-2 font-sans text-[13px] text-text-secondary">
-                        {masterBriefing.layer_summary.composite.escalation ? "escalation_required" : "—"}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--border-default)] pt-3">
-                <span className="rounded-full border border-[color:var(--border-default)] px-2.5 py-1 font-sans text-[11px] font-semibold text-text-secondary">
-                  Evidence: {masterBriefing.overall_evidence_tier}
-                </span>
-                <p className="font-sans text-[11px] text-text-tertiary">
-                  {masterBriefing.briefing_version} · {new Date(masterBriefing.generated_at).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </details>
+      {weeks != null && weeks <= 4 ? (
+        <div className="mt-4 border-t border-[var(--border-default)] pt-4">
+          <p className="mb-2 font-sans text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-tertiary)]">
+            Action window
+          </p>
+          <ActionWindowPill weeks={weeks} />
         </div>
       ) : null}
 
-      {f5.applicable && (
-        <div className="mt-6">
-          <TenSevenPanel
-            riskBand={f5.riskBand as "GREEN" | "YELLOW" | "RED" | "LOCKED"}
-            riskBandExplanation={f5.derivation.riskBandExplanation}
-            daysToLock={f5.pastLock ? "Past lock" : (f5.daysToLock ?? 0)}
-            lockInDate={lockInDate}
-            cores={{
-              completed: f5.completedTotal,
-              required: f5.requiredTotal,
-              missing: f5.missingTotal,
-            }}
-            emsSubset={{
-              completed: f5.completedEngMathSci,
-              required: f5.requiredEngMathSci,
-              missing: f5.missingEngMathSci,
-            }}
-            provisionalFlag={f5.provisionalFlag}
-            onOpenDerivation={(f) => setField(f)}
-          />
+      {band ? (
+        <div className="mt-4 border-t border-[var(--border-default)] pt-4">
+          <p className="mb-2 font-sans text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-tertiary)]">
+            Composite band
+          </p>
+          <BandBadge band={band} />
         </div>
-      )}
+      ) : null}
 
-      {f5.agFailureDualFlags.length > 0 && (
-        <div className="mt-6">
-          <DualFlagAlert flags={f5.agFailureDualFlags} />
+      {eligibility?.ml ? (
+        <div className="mt-4 border-t border-[var(--border-default)] pt-4">
+          <p className="mb-2 font-sans text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-tertiary)]">
+            ML risk score
+          </p>
+          <MlCompact ml={eligibility.ml} />
         </div>
-      )}
+      ) : null}
 
-      {f5.applicable && (
-        <div className="mt-6">
-          {f5.fallbackPathway ? (
-            <FallbackPathwayPanel pathway={f5.fallbackPathway} />
-          ) : (
-            <RecommendedCourses
-              courses={f5.recommendedCoursesNextTerm}
-              riskBand={riskBand}
-            />
-          )}
+      {canEdit ? (
+        <div className="mt-4 flex flex-col gap-2 border-t border-[var(--border-default)] pt-4">
+          <Link
+            href={`/students/${student.id}/transcript/new`}
+            className="text-center font-sans text-[12px] font-medium text-[var(--olive-600)] hover:underline"
+          >
+            Add course +
+          </Link>
+          <Link href={`/students/${student.id}/transcript/ocr`}>
+            <Button variant="outline" fullWidth>
+              Upload transcript
+            </Button>
+          </Link>
         </div>
-      )}
+      ) : null}
+    </div>
+  );
+}
 
-      <div className="mt-6">
-        <EvidenceFootnote
-          evidenceTier={evidenceTier}
-          text="All calculations trace to NCAA Bylaw 14.3 or Manteca Unified School District published calendar assumptions."
-          sourceUrl={f5.derivation.sourceUrl}
-          sourceLabel="NCAA Bylaw 14.3"
+function InitialsAvatar({
+  first,
+  last,
+  size = 40,
+}: {
+  first: string;
+  last: string;
+  size?: number;
+}) {
+  return (
+    <div
+      className="flex items-center justify-center rounded-full bg-[var(--olive-100)] font-sans text-[14px] font-semibold text-[var(--olive-800)]"
+      style={{ width: size, height: size }}
+      aria-hidden
+    >
+      {studentInitials(first, last)}
+    </div>
+  );
+}
+
+function StatCell({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="rounded-md bg-[var(--surface-inner)] px-2 py-2">
+      <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--text-tertiary)]">
+        {label}
+      </p>
+      <p
+        className={`mt-0.5 text-[14px] font-semibold text-[var(--text-primary)] ${mono ? "font-mono" : "font-sans"}`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function MlCompact({
+  ml,
+}: {
+  ml: NonNullable<ProfileEligibilityPayload["ml"]>;
+}) {
+  const pct = (ml.score * 100).toFixed(0);
+  const lower = ml.confidence_lower * 100;
+  const upper = ml.confidence_upper * 100;
+  return (
+    <div>
+      <p className="font-mono text-[20px] font-semibold text-[var(--text-primary)]">{pct}%</p>
+      <p className="font-sans text-[12px] text-[var(--text-secondary)]">
+        {mlRiskTierLabel(ml.risk_tier)}
+      </p>
+      <div
+        className="relative mt-2 h-2 rounded-full bg-[var(--surface-inner)]"
+        aria-label={`Confidence interval ${lower.toFixed(0)} to ${upper.toFixed(0)} percent`}
+      >
+        <div
+          className="absolute top-0 h-2 rounded-full bg-[var(--olive-600)]"
+          style={{ left: `${lower}%`, width: `${Math.max(upper - lower, 2)}%` }}
         />
-      </div>
-
-      <DerivationModal
-        open={field !== null}
-        onClose={() => setField(null)}
-        title={field ? FIELD_TITLES[field] : ""}
-        body={field ? derivationBody[field] : ""}
-        evidenceTier={evidenceTier}
-        sourceUrl={f5.derivation.sourceUrl}
-        sourceLabel="NCAA Bylaw 14.3"
-      />
       </div>
     </div>
   );
