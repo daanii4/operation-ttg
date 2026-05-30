@@ -15,7 +15,12 @@ export {
 } from "./EvidenceTierChip";
 export { Button, type ButtonProps, type ButtonVariant } from "./Button";
 export { Input, type InputProps } from "./Input";
-export { FilterChip, type FilterChipProps } from "./FilterChip";
+export {
+  FilterChip,
+  UtilityFilterChip,
+  type FilterChipProps,
+  type UtilityFilterChipProps,
+} from "./FilterChip";
 export {
   Skeleton,
   SkeletonRow,

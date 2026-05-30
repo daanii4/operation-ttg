@@ -48,15 +48,13 @@ export function RosterTable({ data }: { data: CohortStudentRow[] }) {
   const sorted = React.useMemo(() => {
     if (!sort) {
       return [...data].sort((a, b) => {
-        const oa = OVERALL_ORDER[a.overallRisk] ?? 9;
-        const ob = OVERALL_ORDER[b.overallRisk] ?? 9;
-        if (oa !== ob) return oa - ob;
         const ra = RISK_ORDER[a.riskBand] ?? 9;
         const rb = RISK_ORDER[b.riskBand] ?? 9;
         if (ra !== rb) return ra - rb;
-        const da = a.daysToLock ?? Infinity;
-        const db = b.daysToLock ?? Infinity;
-        return da - db;
+        const da = a.daysToLock ?? (a.riskBand === "LOCKED" ? -1 : Number.POSITIVE_INFINITY);
+        const db = b.daysToLock ?? (b.riskBand === "LOCKED" ? -1 : Number.POSITIVE_INFINITY);
+        if (da !== db) return da - db;
+        return b.missingTotal - a.missingTotal;
       });
     }
     const dir = sort.dir === "asc" ? 1 : -1;

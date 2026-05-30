@@ -1,83 +1,56 @@
 /**
- * QuasarNova v1 — §1.1 BandBadge
- *
- * The four-band semantic pill: GREEN / YELLOW / RED / ESCALATED.
- *
- * • Pure presentational. No layout assumptions baked in.
- * • Color is paired with shape + animation so the badge meets WCAG 1.4.1
- *   (use of color) on its own — important because some advisors consume
- *   the dashboard via screen-share or in low-light rooms where color
- *   discrimination drops.
- *
- * For ESCALATED specifically the spec mandates a 6px filled dot before the
- * label and a `qn-escalated-ping` ring (see globals.css). The ring is the
- * non-color cue that makes escalation detectable for color-blind users.
+ * Eligibility band badge — color + icon + RISK_VOCABULARY label (never color names).
  */
 
 import * as React from "react";
+import { RISK_VOCABULARY, type CompositeRiskBand, type RiskBand } from "@/components/ttg/risk-vocabulary";
 
-export type Band = "GREEN" | "YELLOW" | "RED" | "ESCALATED";
+/** Holistic Briefings band includes ESCALATED; roster Status uses RiskBand. */
+export type Band = RiskBand | "ESCALATED";
 
-type Tone = {
-  border: string;
-  background: string;
-  text: string;
-  label: string;
-};
-
-const TONES: Record<Band, Tone> = {
+const STATUS_STYLES: Record<CompositeRiskBand, { border: string; background: string; text: string }> = {
   GREEN: {
     border: "var(--color-green)",
     background: "var(--color-green-tint)",
-    text: "var(--color-green)",
-    label: "GREEN",
+    text: "#15803d",
   },
   YELLOW: {
     border: "var(--color-yellow)",
     background: "var(--color-yellow-tint)",
-    text: "var(--color-yellow)",
-    label: "YELLOW",
+    text: "#b45309",
   },
   RED: {
     border: "var(--color-red)",
     background: "var(--color-red-tint)",
-    text: "var(--color-red)",
-    label: "RED",
+    text: "#b91c1c",
+  },
+  LOCKED: {
+    border: "var(--color-escalated)",
+    background: "var(--color-escalated-tint)",
+    text: "#6d28d9",
   },
   ESCALATED: {
     border: "var(--color-escalated)",
     background: "var(--color-escalated-tint)",
-    text: "var(--color-escalated)",
-    label: "ESCALATED",
+    text: "#6d28d9",
   },
 };
 
 export interface BandBadgeProps {
   band?: Band | null;
-  /** Optional override label (rare — used in tests/demos only). */
   labelOverride?: string;
   className?: string;
-  /**
-   * Loading skeleton. Renders a 56×18 shimmer pill matching the resting
-   * footprint so layout doesn't reflow when the value arrives.
-   */
   loading?: boolean;
 }
 
-export function BandBadge({
-  band,
-  labelOverride,
-  className,
-  loading = false,
-}: BandBadgeProps) {
+export function BandBadge({ band, labelOverride, className, loading = false }: BandBadgeProps) {
   if (loading) {
     return (
       <span
         aria-hidden
-        className={["qn-skeleton inline-block h-[18px] w-14", className]
+        className={["skeleton inline-block h-[22px] w-[120px] rounded-full", className]
           .filter(Boolean)
           .join(" ")}
-        style={{ borderRadius: 9999 }}
       />
     );
   }
@@ -86,76 +59,55 @@ export function BandBadge({
     return (
       <span
         className={[
-          "inline-flex items-center justify-center rounded-full border px-2",
-          "text-[9px] font-semibold uppercase tracking-[0.04em]",
+          "inline-flex items-center rounded-full border px-2 py-0.5 font-sans text-[11px] text-text-tertiary",
           className,
         ]
           .filter(Boolean)
           .join(" ")}
-        style={{
-          minHeight: 18,
-          paddingTop: 3,
-          paddingBottom: 3,
-          background: "#F9FAFB",
-          borderColor: "#E5E7EB",
-          color: "#6B7280",
-        }}
-        aria-label="Band unknown"
+        style={{ borderColor: "var(--border-default)", background: "var(--surface-inner)" }}
       >
         —
       </span>
     );
   }
 
-  const tone = TONES[band];
+  const vocab = RISK_VOCABULARY[band];
+  const tone = STATUS_STYLES[band];
+  const Icon = vocab.icon;
+  const label = labelOverride ?? vocab.label;
 
   return (
     <span
       className={[
-        "relative inline-flex items-center gap-1 rounded-full border",
-        "text-[9px] font-semibold uppercase tracking-[0.04em] leading-none",
+        "relative inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5",
+        "font-sans text-[11px] font-semibold leading-tight",
         className,
       ]
         .filter(Boolean)
         .join(" ")}
       style={{
-        minHeight: 18,
-        paddingTop: 3,
-        paddingBottom: 3,
-        paddingLeft: 8,
-        paddingRight: 8,
         background: tone.background,
         borderColor: tone.border,
         color: tone.text,
       }}
-      aria-label={`Band ${labelOverride ?? tone.label}`}
+      role="status"
+      aria-label={label}
     >
-      {band === "ESCALATED" && (
-        <span
-          className="relative inline-flex items-center justify-center"
-          aria-hidden
-          style={{ width: 6, height: 6 }}
-        >
-          {/* The ping ring is the non-color cue per §1.1. */}
+      {band === "ESCALATED" ? (
+        <span className="relative inline-flex h-1.5 w-1.5 shrink-0" aria-hidden>
           <span
-            className="qn-escalated-ping absolute inline-flex rounded-full"
-            style={{
-              width: 6,
-              height: 6,
-              background: tone.text,
-            }}
+            className="qn-escalated-ping absolute inline-flex h-1.5 w-1.5 rounded-full"
+            style={{ background: tone.text }}
           />
           <span
-            className="relative inline-flex rounded-full"
-            style={{
-              width: 6,
-              height: 6,
-              background: tone.text,
-            }}
+            className="relative inline-flex h-1.5 w-1.5 rounded-full"
+            style={{ background: tone.text }}
           />
         </span>
+      ) : (
+        <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden style={{ color: tone.text }} />
       )}
-      {labelOverride ?? tone.label}
+      <span className="truncate">{label}</span>
     </span>
   );
 }

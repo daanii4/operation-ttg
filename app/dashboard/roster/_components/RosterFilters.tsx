@@ -1,62 +1,87 @@
 "use client";
 
-/**
- * Roster filter toolbar — Scholars OS pattern.
- *
- * Search + band chips + dropdowns sit on the page surface with a bottom rule.
- * The student table lives in a single Card below (not a second boxed panel).
- */
-
 import * as React from "react";
-import { ChevronDown, Search } from "lucide-react";
-import { Button, FilterChip, type Band } from "@/components/ui/qn";
-import type { UseRosterFiltersResult } from "./use-roster-filters";
-
-const BANDS: Band[] = ["GREEN", "YELLOW", "RED", "ESCALATED"];
+import { Search } from "lucide-react";
+import { FilterChip, UtilityFilterChip } from "@/components/ui/qn/FilterChip";
+import { RISK_VOCABULARY } from "@/components/ttg/risk-vocabulary";
+import {
+  ROSTER_CHROME_TOP_PX,
+  ROSTER_FILTER_BAR_HEIGHT_PX,
+} from "./roster-layout";
+import { RISK_BANDS, type UseRosterFiltersResult } from "./use-roster-filters";
 
 export interface RosterFiltersProps {
   filters: UseRosterFiltersResult;
-  totalCount: number;
   filteredCount: number;
-  /** Desktop toolbar action (e.g. Add student). Hidden on mobile — use FAB there. */
   addStudentAction?: React.ReactNode;
+  mobile?: boolean;
 }
 
 export function RosterFilters({
   filters,
-  totalCount,
   filteredCount,
   addStudentAction,
+  mobile = false,
 }: RosterFiltersProps) {
-  const countLabel =
-    filters.activeFilterCount > 0 || filters.state.search.trim()
-      ? `Showing ${filteredCount} of ${totalCount} students`
-      : `${totalCount} students`;
+  const allBandsActive =
+    filters.state.bands.size === 0 && !filters.state.agFlagged && !filters.state.pastLock;
+
+  const chipRow = (
+    <div
+      role="group"
+      aria-label="Filter athletes by eligibility"
+      className={[
+        "flex items-center gap-2",
+        mobile ? "qn-no-scrollbar -mx-1 overflow-x-auto pb-1" : "flex-wrap",
+      ].join(" ")}
+    >
+      <UtilityFilterChip
+        label="All"
+        active={allBandsActive}
+        onToggle={filters.setAllBands}
+      />
+      {RISK_BANDS.map((b) => (
+        <FilterChip
+          key={b}
+          band={b}
+          label={RISK_VOCABULARY[b].label}
+          active={filters.state.bands.has(b)}
+          onToggle={() => filters.toggleBand(b)}
+          disabled={filters.bandCounts[b] === 0}
+          touch={mobile}
+        />
+      ))}
+      <UtilityFilterChip
+        label="A-G flagged"
+        active={filters.state.agFlagged}
+        onToggle={filters.toggleAgFlagged}
+        disabled={filters.agFlaggedCount === 0}
+      />
+      <UtilityFilterChip
+        label="Past lock"
+        active={filters.state.pastLock}
+        onToggle={filters.togglePastLock}
+        disabled={filters.pastLockCount === 0}
+      />
+    </div>
+  );
 
   return (
-    <div className="mb-5 flex flex-col gap-4">
-      <div className="relative w-full min-w-0 md:hidden">
-        <Search
-          size={14}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-quaternary)]"
-          aria-hidden
-        />
-        <input
-          type="search"
-          value={filters.state.search}
-          onChange={(e) => filters.setSearch(e.target.value)}
-          placeholder="Search by student name…"
-          aria-label="Search roster"
-          className="h-9 w-full min-w-0 rounded-full border border-[var(--border-default)] bg-[var(--surface-inner)] pl-8 pr-3 font-sans text-[16px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-quaternary)] focus:border-[var(--olive-600)] focus:bg-[var(--surface-card)] focus:shadow-[0_0_0_3px_rgba(92,107,70,0.12)]"
-        />
-      </div>
-
-      <div className="border-b border-[var(--border-default)] pb-4">
-        <div className="hidden md:flex md:flex-wrap md:items-center md:gap-3">
-          <div className="relative w-[280px] shrink-0">
+    <div
+      className="sticky z-20 border-b border-[color:var(--border-default)] bg-surface-card"
+      style={{ top: ROSTER_CHROME_TOP_PX, minHeight: ROSTER_FILTER_BAR_HEIGHT_PX }}
+    >
+      <div
+        className={[
+          "flex flex-col gap-3 py-3",
+          mobile ? "px-4" : "flex-row flex-wrap items-center justify-between gap-x-4",
+        ].join(" ")}
+      >
+        <div className={mobile ? "w-full" : "flex min-w-0 flex-1 flex-wrap items-center gap-3"}>
+          <div className="relative w-full min-w-[200px] max-w-md shrink-0">
             <Search
               size={14}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-quaternary)]"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-quaternary"
               aria-hidden
             />
             <input
@@ -66,120 +91,34 @@ export function RosterFilters({
               onKeyDown={(e) => {
                 if (e.key === "Escape") filters.setSearch("");
               }}
-              placeholder="Search by student name…"
-              aria-label="Search roster"
-              className="h-9 w-full rounded-full border border-[var(--border-default)] bg-[var(--surface-inner)] pl-8 pr-3 font-sans text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-quaternary)] transition-[border-color,box-shadow,background-color] hover:border-[var(--border-hover)] focus:border-[var(--olive-600)] focus:bg-[var(--surface-card)] focus:shadow-[0_0_0_3px_rgba(92,107,70,0.12)]"
+              placeholder="Search athletes…"
+              aria-label="Search athletes"
+              className="h-9 w-full rounded-full border-0 bg-surface-inner pl-9 pr-3 font-sans text-[13px] text-text-primary outline-none placeholder:text-text-quaternary transition-[box-shadow,background-color] duration-[var(--duration-instant)] focus:bg-surface-card focus:shadow-[0_0_0_3px_rgba(92,107,70,0.12)] mobile:text-[16px]"
             />
           </div>
-
-          <div
-            role="group"
-            aria-label="Filter by band"
-            className="flex flex-wrap items-center gap-2"
-          >
-            {BANDS.map((b) => (
-              <FilterChip
-                key={b}
-                band={b}
-                active={filters.state.bands.has(b)}
-                onToggle={() => filters.toggleBand(b)}
-              />
-            ))}
-          </div>
-
-          <DropdownSelect
-            label="Sport"
-            value={filters.state.sport}
-            options={[
-              { value: "ALL", label: "All sports" },
-              ...filters.sports.map((s) => ({ value: s, label: s })),
-            ]}
-            onChange={filters.setSport}
-          />
-
-          <DropdownSelect
-            label="Grad year"
-            value={filters.state.gradYear}
-            options={[
-              { value: "ALL", label: "All grad years" },
-              ...filters.gradYears.map((y) => ({ value: String(y), label: String(y) })),
-            ]}
-            onChange={filters.setGradYear}
-          />
-
-          {filters.activeFilterCount > 0 ? (
-            <Button variant="ghost" onClick={filters.clearAll}>
-              Clear ({filters.activeFilterCount})
-            </Button>
-          ) : null}
-
-          {addStudentAction ? (
-            <div className="ml-auto hidden shrink-0 md:flex">{addStudentAction}</div>
-          ) : null}
+          {!mobile ? chipRow : null}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 md:hidden">
-          <div
-            role="group"
-            aria-label="Filter by band"
-            className="flex flex-wrap items-center gap-2"
-          >
-            {BANDS.map((b) => (
-              <FilterChip
-                key={b}
-                band={b}
-                active={filters.state.bands.has(b)}
-                onToggle={() => filters.toggleBand(b)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <p
-          className="mt-3 font-sans text-[12px] leading-snug text-[var(--text-tertiary)]"
-          aria-live="polite"
+        <div
+          className={[
+            "flex shrink-0 items-center gap-3",
+            mobile ? "w-full justify-between" : "",
+          ].join(" ")}
         >
-          {countLabel}
-        </p>
+          <p
+            className="font-mono text-[12px] text-text-tertiary transition-opacity duration-[var(--duration-normal)]"
+            aria-live="polite"
+          >
+            {filteredCount} athlete{filteredCount === 1 ? "" : "s"}
+          </p>
+          {!mobile && addStudentAction ? (
+            <div className="hidden shrink-0 md:flex">{addStudentAction}</div>
+          ) : null}
+        </div>
+
+        {mobile ? chipRow : null}
       </div>
     </div>
-  );
-}
-
-function DropdownSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: Array<{ value: string; label: string }>;
-  onChange: (v: string) => void;
-}) {
-  const selected = options.find((o) => o.value === value)?.label ?? "All";
-  return (
-    <label className="relative inline-flex items-center">
-      <span className="sr-only">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="appearance-none rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] pr-8 font-sans text-[13px] text-[var(--text-primary)] outline-none transition-colors hover:border-[var(--border-hover)] focus-visible:border-[var(--olive-600)] focus-visible:shadow-[0_0_0_3px_rgba(92,107,70,0.12)]"
-        style={{ height: 36, paddingLeft: 12, paddingRight: 32 }}
-        aria-label={label}
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {label}: {opt.label === selected ? opt.label : opt.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        size={16}
-        aria-hidden
-        className="pointer-events-none absolute right-2 text-[var(--text-tertiary)]"
-      />
-    </label>
   );
 }
 

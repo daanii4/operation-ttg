@@ -1,20 +1,10 @@
 "use client";
 
-/**
- * QuasarNova v1 — §3.3 mobile filter bottom sheet.
- *
- * Opens from the "Filter" button in the mobile page header. Slides up over a
- * darkened backdrop, hosts the same controls as the desktop filter bar, and
- * commits filters via the "Apply" primary button. "Clear all" wipes filters
- * without dismissing the sheet — matches expected mobile filter UX.
- */
-
 import * as React from "react";
 import { X } from "lucide-react";
-import { Button, FilterChip, type Band } from "@/components/ui/qn";
-import type { UseRosterFiltersResult } from "./use-roster-filters";
-
-const BANDS: Band[] = ["GREEN", "YELLOW", "RED", "ESCALATED"];
+import { Button, FilterChip, UtilityFilterChip } from "@/components/ui/qn";
+import { RISK_VOCABULARY } from "@/components/ttg/risk-vocabulary";
+import { RISK_BANDS, type UseRosterFiltersResult } from "./use-roster-filters";
 
 export interface RosterFilterSheetProps {
   open: boolean;
@@ -23,7 +13,6 @@ export interface RosterFilterSheetProps {
 }
 
 export function RosterFilterSheet({ open, onClose, filters }: RosterFilterSheetProps) {
-  // Close on Escape for keyboard parity with the close button.
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -40,66 +29,57 @@ export function RosterFilterSheet({ open, onClose, filters }: RosterFilterSheetP
       <div
         aria-hidden
         onClick={onClose}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.4)",
-          zIndex: 60,
-        }}
+        className="fixed inset-0 z-[60] bg-black/40"
       />
-      <div
-        style={{
-          position: "fixed",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          maxHeight: "80vh",
-          background: "var(--surface-card)",
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
-          boxShadow: "var(--shadow-sheet)",
-          zIndex: 65,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <header
-          className="flex items-center justify-between"
-          style={{
-            padding: "12px 16px",
-            borderBottom: "1px solid var(--border-default)",
-          }}
-        >
-          <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-            Filter
-          </h2>
+      <div className="fixed inset-x-0 bottom-0 z-[65] flex max-h-[80vh] flex-col rounded-t-2xl bg-surface-card shadow-lg">
+        <header className="flex items-center justify-between border-b border-[color:var(--border-default)] px-4 py-3">
+          <h2 className="text-base font-semibold text-text-primary">Filter</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close filter sheet"
-            className="flex h-11 w-11 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--olive-600)]"
-            style={{ color: "var(--text-tertiary)" }}
+            className="flex h-11 w-11 items-center justify-center rounded-md text-text-tertiary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--olive-600)]"
           >
             <X size={18} aria-hidden />
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto" style={{ padding: 16 }}>
-          <Section title="Band">
+        <div className="flex-1 overflow-y-auto p-4">
+          <section className="mb-6">
+            <h3 className="mb-3 font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+              Eligibility
+            </h3>
             <div className="flex flex-wrap gap-2">
-              {BANDS.map((b) => (
+              {RISK_BANDS.map((b) => (
                 <FilterChip
                   key={b}
                   band={b}
+                  label={RISK_VOCABULARY[b].label}
                   active={filters.state.bands.has(b)}
                   onToggle={() => filters.toggleBand(b)}
+                  disabled={filters.bandCounts[b] === 0}
                   touch
                 />
               ))}
+              <UtilityFilterChip
+                label="A-G flagged"
+                active={filters.state.agFlagged}
+                onToggle={filters.toggleAgFlagged}
+                disabled={filters.agFlaggedCount === 0}
+              />
+              <UtilityFilterChip
+                label="Past lock"
+                active={filters.state.pastLock}
+                onToggle={filters.togglePastLock}
+                disabled={filters.pastLockCount === 0}
+              />
             </div>
-          </Section>
+          </section>
 
-          <Section title="Sport">
+          <section className="mb-6">
+            <h3 className="mb-3 font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+              Sport
+            </h3>
             <RadioList
               name="sport"
               value={filters.state.sport}
@@ -109,9 +89,12 @@ export function RosterFilterSheet({ open, onClose, filters }: RosterFilterSheetP
               ]}
               onChange={filters.setSport}
             />
-          </Section>
+          </section>
 
-          <Section title="Grad year">
+          <section>
+            <h3 className="mb-3 font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+              Grad year
+            </h3>
             <RadioList
               name="gradYear"
               value={filters.state.gradYear}
@@ -121,53 +104,19 @@ export function RosterFilterSheet({ open, onClose, filters }: RosterFilterSheetP
               ]}
               onChange={filters.setGradYear}
             />
-          </Section>
+          </section>
         </div>
 
-        <footer
-          style={{
-            padding: 16,
-            borderTop: "1px solid var(--border-default)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-          }}
-        >
-          <Button
-            variant="ghost"
-            fullWidth
-            onClick={() => {
-              filters.clearAll();
-            }}
-          >
+        <footer className="flex flex-col gap-2 border-t border-[color:var(--border-default)] p-4">
+          <Button variant="ghost" fullWidth onClick={filters.clearAll}>
             Clear all
           </Button>
-          <Button variant="primary" fullWidth onClick={onClose} style={{ height: 48 }}>
+          <Button variant="primary" fullWidth onClick={onClose} className="min-h-[48px]">
             Apply
           </Button>
         </footer>
       </div>
     </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section style={{ marginBottom: 24 }}>
-      <h3
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          color: "var(--text-tertiary)",
-          marginBottom: 12,
-        }}
-      >
-        {title}
-      </h3>
-      {children}
-    </section>
   );
 }
 
@@ -183,34 +132,22 @@ function RadioList({
   onChange: (v: string) => void;
 }) {
   return (
-    <ul role="list" className="flex flex-col gap-1">
-      {options.map((opt) => {
-        const checked = value === opt.value;
-        return (
-          <li key={opt.value}>
-            <label
-              className="flex w-full items-center gap-3 rounded-md transition-colors duration-[120ms] active:bg-[var(--surface-inner)]"
-              style={{
-                minHeight: 44,
-                paddingLeft: 12,
-                paddingRight: 12,
-                cursor: "pointer",
-                color: "var(--text-primary)",
-              }}
-            >
-              <input
-                type="radio"
-                name={name}
-                value={opt.value}
-                checked={checked}
-                onChange={() => onChange(opt.value)}
-                className="h-4 w-4 accent-[var(--olive-600)]"
-              />
-              <span style={{ fontSize: 14 }}>{opt.label}</span>
-            </label>
-          </li>
-        );
-      })}
+    <ul className="flex flex-col gap-1">
+      {options.map((opt) => (
+        <li key={opt.value}>
+          <label className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-md px-3 active:bg-surface-inner">
+            <input
+              type="radio"
+              name={name}
+              value={opt.value}
+              checked={value === opt.value}
+              onChange={() => onChange(opt.value)}
+              className="h-4 w-4 accent-olive-600"
+            />
+            <span className="text-[14px] text-text-primary">{opt.label}</span>
+          </label>
+        </li>
+      ))}
     </ul>
   );
 }
