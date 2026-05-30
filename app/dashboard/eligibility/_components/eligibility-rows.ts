@@ -1,15 +1,12 @@
 /**
- * Sprint 6 / A4-3 — pure mappers from F1/F3/F6 results to the
- * <CompletionCard /> SubjectRow shape.
- *
- * Kept in a separate file (no React) so the mappings are easy to unit-test
- * later if we want — and so the card component itself stays presentational.
+ * Mappers from F1/F3/F6 results to CompletionCard rows + per-row derivations.
  */
 
 import type { F1Result } from "@/lib/calculations/f1";
 import type { F3Result } from "@/lib/calculations/f3";
 import type { F6Result } from "@/lib/calculations/f6";
 import type { SubjectRow } from "./CompletionCard";
+import { CALIFORNIA_AG_AUTHORITY, NCAA_BYLAW_14_3 } from "@/lib/config/ncaa-authority";
 
 const AG_LABELS: Record<string, string> = {
   a: "History / Social Science",
@@ -21,15 +18,7 @@ const AG_LABELS: Record<string, string> = {
   g: "College-Preparatory Elective",
 };
 
-const AG_ORDER: Array<keyof typeof AG_LABELS> = [
-  "b", // English first — matches UC's documentation order
-  "c", // Math
-  "d", // Lab Science
-  "e", // Foreign Language
-  "f", // Visual / Performing Arts
-  "a", // History / Social Science
-  "g", // Elective
-];
+const AG_ORDER: Array<keyof typeof AG_LABELS> = ["b", "c", "d", "e", "f", "a", "g"];
 
 const NCAA_LABELS: Record<string, string> = {
   eng: "English",
@@ -49,45 +38,83 @@ const NCAA_ORDER = [
   "addl_any",
 ] as const;
 
+function rowFromCategory(
+  key: string,
+  label: string,
+  completed: number,
+  required: number,
+  complete: boolean,
+  insufficient: boolean,
+  sourceLabel: string
+): SubjectRow {
+  return {
+    key,
+    label,
+    completed,
+    required,
+    satisfied: complete,
+    insufficient,
+    derivationTitle: `${label} completion`,
+    derivationBody: insufficient
+      ? "Insufficient evidence to count years in this category."
+      : `${completed.toFixed(1)} of ${required.toFixed(1)} required years completed in ${label}. ` +
+        (complete
+          ? "Requirement met for this category."
+          : `${(required - completed).toFixed(1)} year(s) still needed.`) +
+        ` Source: ${sourceLabel}.`,
+  };
+}
+
 export function agRowsFromF1(f1: F1Result | null | undefined): SubjectRow[] {
   if (!f1) return [];
+  const insufficient = f1.evidenceTier === "Insufficient";
   return AG_ORDER.map((key) => {
     const cat = f1.perCategory[key];
     if (!cat) return null;
-    return {
-      key: `ag-${key}`,
-      label: AG_LABELS[key] ?? key.toUpperCase(),
-      completed: cat.completedYears,
-      required: cat.requiredYears,
-    } satisfies SubjectRow;
+    return rowFromCategory(
+      `ag-${key}`,
+      AG_LABELS[key] ?? key.toUpperCase(),
+      cat.completedYears,
+      cat.requiredYears,
+      cat.complete,
+      insufficient,
+      CALIFORNIA_AG_AUTHORITY.sourceLabel
+    );
   }).filter((r): r is SubjectRow => r !== null);
 }
 
 export function ncaaRowsFromF3(f3: F3Result | null | undefined): SubjectRow[] {
   if (!f3 || !f3.applicable) return [];
+  const insufficient = f3.evidenceTier === "Insufficient";
   return NCAA_ORDER.map((key) => {
     const cat = f3.perCategory[key];
     if (!cat) return null;
-    return {
-      key: `ncaa-d1-${key}`,
-      label: NCAA_LABELS[key] ?? key,
-      completed: cat.completedYears,
-      required: cat.requiredYears,
-    } satisfies SubjectRow;
+    return rowFromCategory(
+      `ncaa-d1-${key}`,
+      NCAA_LABELS[key] ?? key,
+      cat.completedYears,
+      cat.requiredYears,
+      cat.complete,
+      insufficient,
+      NCAA_BYLAW_14_3.sourceLabel
+    );
   }).filter((r): r is SubjectRow => r !== null);
 }
 
 export function ncaaRowsFromF6(f6: F6Result | null | undefined): SubjectRow[] {
-  if (!f6) return [];
-  // F6 mirrors F3's per-category map but for D2 thresholds.
+  if (!f6 || !f6.applicable) return [];
+  const insufficient = f6.evidenceTier === "Insufficient";
   return NCAA_ORDER.map((key) => {
     const cat = f6.perCategory[key];
     if (!cat) return null;
-    return {
-      key: `ncaa-d2-${key}`,
-      label: NCAA_LABELS[key] ?? key,
-      completed: cat.completedYears,
-      required: cat.requiredYears,
-    } satisfies SubjectRow;
+    return rowFromCategory(
+      `ncaa-d2-${key}`,
+      NCAA_LABELS[key] ?? key,
+      cat.completedYears,
+      cat.requiredYears,
+      cat.complete,
+      insufficient,
+      NCAA_BYLAW_14_3.sourceLabel
+    );
   }).filter((r): r is SubjectRow => r !== null);
 }

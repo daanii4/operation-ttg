@@ -38,7 +38,7 @@ export function StudentWorkspaceList({
 
   return (
     <div
-      className="flex w-[280px] shrink-0 flex-col border-r border-[var(--border-default)] bg-[var(--surface-card)] lg:w-[300px]"
+      className="flex w-[280px] shrink-0 flex-col border-r border-[var(--border-default)] bg-[var(--surface-card)] lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-72px)] lg:w-[320px]"
       aria-label={ariaLabel ?? `${title} list`}
     >
       <div className="border-b border-[var(--border-default)] px-4 py-4">

@@ -1,25 +1,30 @@
 "use client";
 
 /**
- * Sprint 6 / A4-3 — Eligibility page client.
+ * Eligibility tab — academic frameworks only (A-G, NCAA D1/D2, Core GPA).
  *
- * Layout:
- *   • Desktop: 320px student selector left + two side-by-side cards (A-G,
- *     NCAA D1/D2) + GPA qualifier row spanning both columns.
- *   • Mobile: stacked — A-G first, NCAA next, GPA row last.
- *
- * NCAA card splits into D1 + D2 sub-sections when the student declares both
- * intents. The student's targetDivision drives which sub-sections appear.
+ * Scope decision (owner-confirmed): AIMS / mental-health signals intentionally
+ * live on the student profile (Trajectory), briefing layer summary, and roster
+ * holistic roll-up — NOT on this defensible-academics surface shown to districts.
  */
 
 import * as React from "react";
 import { AlertCircle, RefreshCcw } from "lucide-react";
+import Badge, { type BandKey } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/qn";
 import StudentWorkspaceLayout from "@/components/dashboard/StudentWorkspaceLayout";
 import MobileStudentSelector from "@/components/dashboard/MobileStudentSelector";
 import MobileStudentPickerSheet from "@/components/dashboard/MobileStudentPickerSheet";
+import EvidenceFootnote from "@/components/ttg/EvidenceFootnote";
+import { RISK_VOCABULARY } from "@/components/ttg/risk-vocabulary";
 import { useBriefingData } from "@/app/dashboard/briefings/_components/use-briefing-data";
 import type { QnRosterRow } from "@/lib/cohort/qn-roster";
+import { NCAA_BYLAW_14_3 } from "@/lib/config/ncaa-authority";
+import {
+  frameworkVerdictFromF1,
+  frameworkVerdictFromF3,
+  frameworkVerdictFromF6,
+} from "@/lib/eligibility/framework-verdict";
 import CompletionCard from "./_components/CompletionCard";
 import GpaQualifierRow from "./_components/GpaQualifierRow";
 import {
@@ -45,6 +50,20 @@ function divisionsFor(target: string): { d1: boolean; d2: boolean } {
   }
 }
 
+const HOLISTIC_TO_RISK: Record<QnRosterRow["band"], keyof typeof RISK_VOCABULARY> = {
+  GREEN: "GREEN",
+  YELLOW: "YELLOW",
+  RED: "RED",
+  ESCALATED: "ESCALATED",
+};
+
+const HOLISTIC_BAND_KEY: Record<QnRosterRow["band"], BandKey> = {
+  GREEN: "green",
+  YELLOW: "yellow",
+  RED: "red",
+  ESCALATED: "escalation",
+};
+
 export default function EligibilityPageClient({ rows }: EligibilityPageClientProps) {
   const [selectedId, setSelectedId] = React.useState<string | null>(
     rows[0]?.studentId ?? null
@@ -57,8 +76,8 @@ export default function EligibilityPageClient({ rows }: EligibilityPageClientPro
   );
 
   return (
-    <>
-      {/* ============================ Desktop ============================ */}
+    <div className="mx-auto w-full max-w-[1280px] px-4 pt-6 desktop:px-6">
+      {/* Desktop */}
       <StudentWorkspaceLayout
         rows={rows}
         selectedId={selectedId}
@@ -66,10 +85,16 @@ export default function EligibilityPageClient({ rows }: EligibilityPageClientPro
         listTitle="Eligibility"
         hideBand
       >
-        <EligibilityBody selected={selected} briefing={briefing} desktop embedded />
+        <div className="p-6">
+          <EligibilityBody
+            selected={selected}
+            briefing={briefing}
+            desktop
+          />
+        </div>
       </StudentWorkspaceLayout>
 
-      {/* ============================ Mobile ============================= */}
+      {/* Mobile */}
       <div className="md:hidden">
         <MobileStudentSelector
           selected={selected}
@@ -84,11 +109,11 @@ export default function EligibilityPageClient({ rows }: EligibilityPageClientPro
           selectedId={selectedId}
           onSelect={setSelectedId}
         />
-        <div style={{ padding: 16 }}>
+        <div className="pb-6">
           <EligibilityBody selected={selected} briefing={briefing} desktop={false} />
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -96,91 +121,118 @@ function EligibilityBody({
   selected,
   briefing,
   desktop,
-  embedded = false,
 }: {
   selected: QnRosterRow | null;
   briefing: ReturnType<typeof useBriefingData>;
   desktop: boolean;
-  embedded?: boolean;
 }) {
+  const [contentVisible, setContentVisible] = React.useState(true);
+  const studentKey = selected?.studentId ?? "none";
+
+  React.useEffect(() => {
+    setContentVisible(false);
+    const t = window.setTimeout(() => setContentVisible(true), 16);
+    return () => window.clearTimeout(t);
+  }, [studentKey]);
+
   if (!selected) return <NoSelection />;
-  if (briefing.status === "loading") return <Loading desktop={desktop} />;
-  if (briefing.status === "error") {
-    return <ErrorState onRetry={briefing.refetch} message={briefing.error} />;
-  }
-  if (briefing.status === "empty" || !briefing.data) return <NoData />;
-
-  const data = briefing.data;
-  const divisions = divisionsFor(selected.targetDivision);
-  const f4 = data.f8 ? null : null; // f4 is on bundle, not f8 — pulled below
-  void f4;
-
-  // The bundle from build-student-briefing.ts contains f1..f7. We never
-  // persist that on the BriefingPayload type, but the eligibility API
-  // returns it directly via `...record.bundle`. Cast to read it without
-  // bloating the BriefingPayload shape.
-  const bundle = data as unknown as {
-    f1?: import("@/lib/calculations/f1").F1Result;
-    f3?: import("@/lib/calculations/f3").F3Result;
-    f4?: import("@/lib/calculations/f4").F4Result;
-    f6?: import("@/lib/calculations/f6").F6Result;
-    f7?: import("@/lib/calculations/f7").F7Result;
-  };
-
-  const agRows = agRowsFromF1(bundle.f1 ?? null);
-  const d1Rows = ncaaRowsFromF3(bundle.f3 ?? null);
-  const d2Rows = ncaaRowsFromF6(bundle.f6 ?? null);
-
-  const cellVariant = embedded ? ("embeddedCell" as const) : ("card" as const);
-
-  if (embedded) {
-    return (
-      <>
-        <div className="grid md:grid-cols-2 md:divide-x md:divide-[var(--border-default)]">
-          <CompletionCard
-            variant={cellVariant}
-            title="California A-G"
-            subtitle="UC / CSU subject area completion"
-            rows={agRows}
-            source="F1"
-          />
-          <NcaaSection
-            embedded
-            d1Rows={divisions.d1 ? d1Rows : []}
-            d2Rows={divisions.d2 ? d2Rows : []}
-          />
-        </div>
-        <div className="border-t border-[var(--border-default)]">
-          <GpaQualifierRow
-            variant="embeddedCell"
-            f4={bundle.f4}
-            f7={bundle.f7}
-            showD1={divisions.d1}
-            showD2={divisions.d2}
-          />
-        </div>
-      </>
-    );
-  }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div
+      className="flex flex-col gap-6 transition-opacity duration-[220ms] ease-[var(--ease-out)] motion-reduce:transition-none"
+      style={{ opacity: contentVisible ? 1 : 0 }}
+      key={studentKey}
+    >
+      <AthleteHeader student={selected} />
+
+      {briefing.status === "loading" ? (
+        <Loading desktop={desktop} />
+      ) : briefing.status === "error" ? (
+        <ErrorState onRetry={briefing.refetch} message={briefing.error} />
+      ) : briefing.status === "empty" || !briefing.data ? (
+        <NoData />
+      ) : (
+        <EligibilityFrameworks
+          selected={selected}
+          bundle={briefing.data as EligibilityBundle}
+          desktop={desktop}
+        />
+      )}
+
+      <EvidenceFootnote
+        text="All calculations trace to NCAA Bylaw 14.3 or published school calendar assumptions. No ML, no causal inference."
+        sourceUrl={NCAA_BYLAW_14_3.sourceUrl}
+        sourceLabel={NCAA_BYLAW_14_3.sourceLabel}
+      />
+    </div>
+  );
+}
+
+type EligibilityBundle = {
+  f1?: import("@/lib/calculations/f1").F1Result;
+  f3?: import("@/lib/calculations/f3").F3Result;
+  f4?: import("@/lib/calculations/f4").F4Result;
+  f6?: import("@/lib/calculations/f6").F6Result;
+  f7?: import("@/lib/calculations/f7").F7Result;
+};
+
+function AthleteHeader({ student }: { student: QnRosterRow }) {
+  const riskKey = HOLISTIC_TO_RISK[student.band];
+  const vocab = RISK_VOCABULARY[riskKey];
+
+  return (
+    <header className="flex flex-wrap items-start justify-between gap-3 border-b border-[color:var(--border-default)] pb-4">
+      <div>
+        <h2 className="font-serif text-[22px] leading-tight text-text-primary">
+          {student.fullName}
+        </h2>
+        <p className="mt-1 font-sans text-[13px] text-text-secondary">
+          Grade {student.grade} · {student.sport} · {student.targetDivision.replace(/_/g, " ")}
+        </p>
+      </div>
+      <Badge band={HOLISTIC_BAND_KEY[student.band]} size="md" icon={vocab.icon}>
+        {vocab.label}
+      </Badge>
+    </header>
+  );
+}
+
+function EligibilityFrameworks({
+  selected,
+  bundle,
+  desktop,
+}: {
+  selected: QnRosterRow;
+  bundle: EligibilityBundle;
+  desktop: boolean;
+}) {
+  const divisions = divisionsFor(selected.targetDivision);
+  const agVerdict = frameworkVerdictFromF1(bundle.f1);
+  const d1Verdict = frameworkVerdictFromF3(bundle.f3);
+  const d2Verdict = frameworkVerdictFromF6(bundle.f6);
+
+  return (
+    <>
       <div
         className={
           desktop
-            ? "grid items-start gap-4 md:grid-cols-2"
-            : "flex flex-col gap-4"
+            ? "grid items-start gap-6 lg:grid-cols-2"
+            : "flex flex-col gap-6"
         }
       >
         <CompletionCard
           title="California A-G"
-          subtitle="UC / CSU subject area completion"
-          rows={agRows}
-          source="F1"
+          subtitle="UC / CSU subject completion"
+          rows={agRowsFromF1(bundle.f1)}
+          verdict={agVerdict}
         />
-        <NcaaSection
-          d1Rows={divisions.d1 ? d1Rows : []}
-          d2Rows={divisions.d2 ? d2Rows : []}
+        <NcaaCards
+          divisions={divisions}
+          d1Rows={ncaaRowsFromF3(bundle.f3)}
+          d2Rows={ncaaRowsFromF6(bundle.f6)}
+          d1Verdict={d1Verdict}
+          d2Verdict={d2Verdict}
+          stacked={!desktop}
         />
       </div>
       <GpaQualifierRow
@@ -189,86 +241,106 @@ function EligibilityBody({
         showD1={divisions.d1}
         showD2={divisions.d2}
       />
-    </div>
+    </>
   );
 }
 
-function NcaaSection({
+function NcaaCards({
+  divisions,
   d1Rows,
   d2Rows,
-  embedded = false,
+  d1Verdict,
+  d2Verdict,
+  stacked,
 }: {
+  divisions: { d1: boolean; d2: boolean };
   d1Rows: ReturnType<typeof ncaaRowsFromF3>;
   d2Rows: ReturnType<typeof ncaaRowsFromF6>;
-  embedded?: boolean;
+  d1Verdict: ReturnType<typeof frameworkVerdictFromF3>;
+  d2Verdict: ReturnType<typeof frameworkVerdictFromF6>;
+  stacked: boolean;
 }) {
-  const variant = embedded ? ("embeddedCell" as const) : ("card" as const);
+  const gap = stacked ? "flex flex-col gap-6" : "flex flex-col gap-6";
 
-  if (d1Rows.length === 0 && d2Rows.length === 0) {
+  if (!divisions.d1 && !divisions.d2) {
     return (
       <CompletionCard
-        variant={variant}
         title="NCAA Core"
         subtitle="No NCAA division intent recorded"
         rows={[]}
-        source="F3 · F6"
+        verdict={{
+          band: null,
+          notApplicable: true,
+          insufficient: false,
+          provisional: false,
+          provisionalReason: null,
+          chipTier: "Insufficient",
+          source: NCAA_BYLAW_14_3,
+          verdictTitle: "NCAA core completion",
+          verdictBody: "No NCAA division intent is recorded for this athlete.",
+        }}
       />
     );
   }
-  if (d1Rows.length > 0 && d2Rows.length > 0) {
+
+  if (divisions.d1 && divisions.d2) {
     return (
-      <div className={embedded ? "flex flex-col divide-y divide-[var(--border-default)]" : "flex flex-col gap-4"}>
+      <div className={gap}>
         <CompletionCard
-          variant={variant}
           title="NCAA D1 Core"
           subtitle="Division I core course completion"
           rows={d1Rows}
-          source="F3"
+          verdict={d1Verdict}
         />
         <CompletionCard
-          variant={variant}
           title="NCAA D2 Core"
           subtitle="Division II core course completion"
           rows={d2Rows}
-          source="F6"
+          verdict={d2Verdict}
         />
       </div>
     );
   }
-  if (d1Rows.length > 0) {
+
+  if (divisions.d1) {
     return (
       <CompletionCard
-        variant={variant}
         title="NCAA D1 Core"
         subtitle="Division I core course completion"
         rows={d1Rows}
-        source="F3"
+        verdict={d1Verdict}
       />
     );
   }
+
   return (
     <CompletionCard
-      variant={variant}
       title="NCAA D2 Core"
       subtitle="Division II core course completion"
       rows={d2Rows}
-      source="F6"
+      verdict={d2Verdict}
     />
   );
 }
 
 function Loading({ desktop }: { desktop: boolean }) {
   return (
-    <div className="flex flex-col gap-4">
-      <div
-        className={
-          desktop ? "grid items-start gap-4 md:grid-cols-2" : "flex flex-col gap-4"
-        }
-      >
-        <div className="animate-pulse rounded-md bg-[var(--surface-inner)]" style={{ width: "100%", height: 320, borderRadius: "var(--radius-default)" }} />
-        <div className="animate-pulse rounded-md bg-[var(--surface-inner)]" style={{ width: "100%", height: 320, borderRadius: "var(--radius-default)" }} />
+    <div className={desktop ? "grid gap-6 lg:grid-cols-2" : "flex flex-col gap-6"}>
+      <CompletionCard
+        title=""
+        rows={[]}
+        verdict={null}
+        loading
+      />
+      <CompletionCard
+        title=""
+        rows={[]}
+        verdict={null}
+        loading
+      />
+      <div className={desktop ? "lg:col-span-2" : ""}>
+        <GpaQualifierRow loading />
       </div>
-      <div className="animate-pulse rounded-md bg-[var(--surface-inner)]" style={{ width: "100%", height: 140, borderRadius: "var(--radius-default)" }} />
     </div>
   );
 }
@@ -283,26 +355,18 @@ function ErrorState({
   return (
     <div
       role="alert"
-      style={{
-        padding: "16px 20px",
-        background: "var(--color-red-tint)",
-        borderLeft: "3px solid var(--color-red)",
-        borderRadius: 6,
-      }}
+      className="rounded-md border-l-[3px] border-[color:var(--color-red)] bg-[var(--color-red-tint)] px-5 py-4"
     >
       <div className="flex items-start gap-2">
-        <AlertCircle size={20} aria-hidden style={{ color: "var(--color-red)" }} />
+        <AlertCircle size={20} aria-hidden className="text-[color:var(--color-red)]" />
         <div>
-          <p
-            className="text-base font-semibold"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Couldn't load eligibility
+          <p className="text-base font-semibold text-text-primary">
+            Couldn&apos;t load eligibility
           </p>
-          <p style={{ fontSize: 12, color: "var(--color-red)", marginTop: 2 }}>
+          <p className="mt-0.5 text-[12px] text-[color:var(--color-red)]">
             {message ?? "Check your connection and try again."}
           </p>
-          <div style={{ marginTop: 12 }}>
+          <div className="mt-3">
             <Button variant="outline" icon={RefreshCcw} onClick={onRetry}>
               Retry
             </Button>
@@ -315,21 +379,9 @@ function ErrorState({
 
 function NoSelection() {
   return (
-    <div
-      role="status"
-      style={{
-        textAlign: "center",
-        padding: 48,
-        color: "var(--text-tertiary)",
-      }}
-    >
-      <p
-        className="text-base font-semibold"
-        style={{ color: "var(--text-primary)" }}
-      >
-        Select a student
-      </p>
-      <p style={{ marginTop: 4, fontSize: 13 }}>
+    <div role="status" className="py-12 text-center">
+      <p className="text-base font-semibold text-text-primary">Select a student</p>
+      <p className="mt-1 text-[13px] text-text-tertiary">
         Choose a student from the list to view their eligibility detail.
       </p>
     </div>
@@ -338,18 +390,9 @@ function NoSelection() {
 
 function NoData() {
   return (
-    <div
-      role="status"
-      style={{
-        textAlign: "center",
-        padding: 48,
-        color: "var(--text-tertiary)",
-      }}
-    >
-      <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-        No eligibility data yet
-      </p>
-      <p style={{ marginTop: 4, fontSize: 13 }}>
+    <div role="status" className="py-12 text-center">
+      <p className="text-base font-semibold text-text-primary">No eligibility data yet</p>
+      <p className="mt-1 text-[13px] text-text-tertiary">
         Eligibility data is populated as transcript records arrive.
       </p>
     </div>

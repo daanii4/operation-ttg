@@ -7,6 +7,12 @@ import {
   ncaaRowsFromF3,
   ncaaRowsFromF6,
 } from "@/app/dashboard/eligibility/_components/eligibility-rows";
+import {
+  frameworkVerdictFromF1,
+  frameworkVerdictFromF3,
+  frameworkVerdictFromF6,
+} from "@/lib/eligibility/framework-verdict";
+import { NCAA_BYLAW_14_3 } from "@/lib/config/ncaa-authority";
 import type { ProfileEligibilityPayload, ProfileStudent } from "../profile-types";
 
 function divisionsFor(target: string): { d1: boolean; d2: boolean } {
@@ -43,86 +49,110 @@ export function ProfileEligibilityTab({
   const d2Rows = ncaaRowsFromF6(eligibility.f6 ?? null);
 
   return (
-  <div className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)]">
-    <div className="grid md:grid-cols-2 md:divide-x md:divide-[var(--border-default)]">
-      <CompletionCard
-        variant="embeddedCell"
-        title="California A-G"
-        subtitle="UC / CSU subject area completion"
-        rows={agRows}
-        source="F1"
-      />
-      <NcaaSection d1Rows={divisions.d1 ? d1Rows : []} d2Rows={divisions.d2 ? d2Rows : []} />
+    <div className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)]">
+      <div className="grid md:grid-cols-2 md:divide-x md:divide-[var(--border-default)]">
+        <CompletionCard
+          embedded
+          title="California A-G"
+          subtitle="UC / CSU subject area completion"
+          rows={agRows}
+          verdict={frameworkVerdictFromF1(eligibility.f1)}
+        />
+        <NcaaSection
+          divisions={divisions}
+          d1Rows={d1Rows}
+          d2Rows={d2Rows}
+          f3={eligibility.f3}
+          f6={eligibility.f6}
+        />
+      </div>
+      <div className="border-t border-[var(--border-default)]">
+        <GpaQualifierRow
+          f4={eligibility.f4}
+          f7={eligibility.f7}
+          showD1={divisions.d1}
+          showD2={divisions.d2}
+        />
+      </div>
     </div>
-    <div className="border-t border-[var(--border-default)]">
-      <GpaQualifierRow
-        variant="embeddedCell"
-        f4={eligibility.f4}
-        f7={eligibility.f7}
-        showD1={divisions.d1}
-        showD2={divisions.d2}
-      />
-    </div>
-  </div>
   );
 }
 
 function NcaaSection({
+  divisions,
   d1Rows,
   d2Rows,
+  f3,
+  f6,
 }: {
+  divisions: { d1: boolean; d2: boolean };
   d1Rows: ReturnType<typeof ncaaRowsFromF3>;
   d2Rows: ReturnType<typeof ncaaRowsFromF6>;
+  f3: ProfileEligibilityPayload["f3"];
+  f6: ProfileEligibilityPayload["f6"];
 }) {
-  if (d1Rows.length === 0 && d2Rows.length === 0) {
+  const d1Verdict = frameworkVerdictFromF3(f3);
+  const d2Verdict = frameworkVerdictFromF6(f6);
+
+  if (!divisions.d1 && !divisions.d2) {
     return (
       <CompletionCard
-        variant="embeddedCell"
+        embedded
         title="NCAA Core"
         subtitle="No NCAA division intent recorded"
         rows={[]}
-        source="F3 · F6"
+        verdict={{
+          band: null,
+          notApplicable: true,
+          insufficient: false,
+          provisional: false,
+          provisionalReason: null,
+          chipTier: "Insufficient",
+          source: NCAA_BYLAW_14_3,
+          verdictTitle: "NCAA core completion",
+          verdictBody: "No NCAA division intent is recorded for this athlete.",
+        }}
       />
     );
   }
-  if (d1Rows.length > 0 && d2Rows.length > 0) {
+  if (divisions.d1 && divisions.d2) {
     return (
       <div className="flex flex-col divide-y divide-[var(--border-default)]">
         <CompletionCard
-          variant="embeddedCell"
+          embedded
           title="NCAA D1 Core"
           subtitle="Division I core course completion"
           rows={d1Rows}
-          source="F3"
+          verdict={d1Verdict}
         />
         <CompletionCard
-          variant="embeddedCell"
+          embedded
           title="NCAA D2 Core"
           subtitle="Division II core course completion"
           rows={d2Rows}
-          source="F6"
+          verdict={d2Verdict}
         />
       </div>
     );
   }
-  if (d1Rows.length > 0) {
+  if (divisions.d1) {
     return (
       <CompletionCard
-        variant="embeddedCell"
+        embedded
         title="NCAA D1 Core"
         subtitle="Division I core course completion"
         rows={d1Rows}
-        source="F3"
+        verdict={d1Verdict}
       />
     );
   }
   return (
     <CompletionCard
-      variant="embeddedCell"
+      embedded
       title="NCAA D2 Core"
       subtitle="Division II core course completion"
       rows={d2Rows}
-      source="F6"
+      verdict={d2Verdict}
     />
   );
 }

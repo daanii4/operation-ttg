@@ -1,157 +1,272 @@
 "use client";
 
-/**
- * Sprint 6 / A4-3 — Completion card.
- *
- * One row per subject area with a label, a segmented completion bar, and a
- * count "completed / required". Color per row: green when met, amber while
- * in progress, red when the deficit is unrecoverable.
- *
- * Used for both the A-G card (F1) and the NCAA D1/D2 cards (F3 / F6). The
- * caller passes an array of `SubjectRow`s — the card itself is agnostic of
- * the framework so we don't fork the visual logic.
- */
-
 import * as React from "react";
-import {
-  workspaceSectionShell,
-  type WorkspaceSectionVariant,
-} from "@/lib/ui/workspace-section";
+import { AlertTriangle, CheckCircle, Info } from "lucide-react";
+import Badge, { type BandKey } from "@/components/ui/Badge";
+import { EvidenceTierChip, Skeleton, type EvidenceTier } from "@/components/ui/qn";
+import { DerivationModal } from "@/components/ttg/DerivationModal";
+import { DerivationTrigger } from "@/components/ttg/DerivationTrigger";
+import { ProvisionalAlert } from "@/components/ttg/ProvisionalAlert";
+import { RISK_VOCABULARY } from "@/components/ttg/risk-vocabulary";
+import type { FrameworkVerdict } from "@/lib/eligibility/framework-verdict";
+import type { AuthorityCitation } from "@/lib/config/ncaa-authority";
 
 export interface SubjectRow {
   key: string;
   label: string;
   completed: number;
   required: number;
-  /** Optional override; default tone is derived from completed/required ratio. */
-  tone?: "green" | "yellow" | "red";
-  /** Optional muted hint shown under the row (e.g. dual-flag warning). */
-  hint?: string | null;
+  satisfied: boolean;
+  insufficient?: boolean;
+  derivationTitle: string;
+  derivationBody: string;
 }
 
 export interface CompletionCardProps {
   title: string;
   subtitle?: string;
   rows: SubjectRow[];
-  /** Right-aligned label after the title (e.g. "F1" or "F3"). */
-  source?: string;
-  variant?: WorkspaceSectionVariant;
+  verdict: FrameworkVerdict | null;
+  loading?: boolean;
+  /** Flat section inside profile shell — no outer card chrome. */
+  embedded?: boolean;
 }
 
-function deriveTone(row: SubjectRow): "green" | "yellow" | "red" {
-  if (row.tone) return row.tone;
-  if (row.completed >= row.required) return "green";
-  if (row.completed > 0) return "yellow";
-  return "red";
-}
-
-const TONE_FILL: Record<"green" | "yellow" | "red", string> = {
-  green: "var(--color-green)",
-  yellow: "var(--color-yellow)",
-  red: "var(--color-red)",
+const BAND_KEY: Record<string, BandKey> = {
+  GREEN: "green",
+  YELLOW: "yellow",
+  RED: "red",
+  LOCKED: "locked",
 };
 
-const TONE_TEXT: Record<"green" | "yellow" | "red", string> = {
-  green: "var(--color-green)",
-  yellow: "var(--color-yellow)",
-  red: "var(--color-red)",
+type DerivationState = {
+  title: string;
+  body: string;
+  evidenceTier: EvidenceTier;
+  source: AuthorityCitation;
 };
 
 export function CompletionCard({
   title,
   subtitle,
   rows,
-  source,
-  variant = "card",
+  verdict,
+  loading = false,
+  embedded = false,
 }: CompletionCardProps) {
-  return (
-    <section
-      aria-labelledby={`completion-${title.toLowerCase().replace(/\W+/g, "-")}-heading`}
-      style={workspaceSectionShell(variant)}
-    >
-      <header className="flex items-baseline justify-between">
-        <div>
+  const [derivation, setDerivation] = React.useState<DerivationState | null>(null);
+  const shellClass = embedded
+    ? "p-6"
+    : "rounded-lg border border-[color:var(--border-default)] bg-surface-card p-6 shadow-sm";
+  const headingId = `completion-${title.toLowerCase().replace(/\W+/g, "-")}-heading`;
+
+  const openDerivation = (d: DerivationState) => setDerivation(d);
+
+  if (loading) {
+    return (
+      <section
+        aria-labelledby={headingId}
+        className={shellClass}
+      >
+        <header className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <Skeleton className="mb-2 h-5 w-40" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+          <Skeleton className="h-6 w-28 rounded-full" />
+        </header>
+        <ul className="mt-4 flex flex-col" role="list">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <li
+              key={i}
+              className="flex min-h-[36px] items-center border-b border-[color:var(--border-default)] py-2 last:border-b-0"
+            >
+              <Skeleton className="h-4 w-full" />
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
+
+  if (verdict?.notApplicable) {
+    return (
+      <section
+        aria-labelledby={headingId}
+        className={shellClass}
+      >
+        <header>
           <h3
-            id={`completion-${title.toLowerCase().replace(/\W+/g, "-")}-heading`}
-            className="font-serif text-[18px] font-normal leading-snug text-[var(--text-primary)]"
+            id={headingId}
+            className="font-serif text-[18px] font-normal leading-snug text-text-primary"
           >
             {title}
           </h3>
           {subtitle ? (
-            <p style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2 }}>
-              {subtitle}
-            </p>
+            <p className="mt-1 font-sans text-[12px] text-text-tertiary">{subtitle}</p>
           ) : null}
+        </header>
+        <div className="mt-6 flex items-start gap-2 text-text-secondary">
+          <Info size={16} className="mt-0.5 shrink-0" aria-hidden />
+          <p className="font-sans text-[13px] leading-relaxed">
+            Not applicable for this athlete&apos;s declared division.
+          </p>
         </div>
-        {source ? (
-          <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>{source}</span>
-        ) : null}
-      </header>
+      </section>
+    );
+  }
 
-      <ul role="list" className="mt-4 flex flex-col gap-3">
-        {rows.map((row) => (
-          <CompletionRow key={row.key} row={row} />
-        ))}
-      </ul>
-    </section>
+  const band = verdict?.band;
+  const vocab = band ? RISK_VOCABULARY[band] : null;
+
+  return (
+    <>
+      <section
+        aria-labelledby={headingId}
+        className={shellClass}
+      >
+        <header className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h3
+              id={headingId}
+              className="font-serif text-[18px] font-normal leading-snug text-text-primary"
+            >
+              {title}
+            </h3>
+            {subtitle ? (
+              <p className="mt-1 font-sans text-[12px] text-text-tertiary">{subtitle}</p>
+            ) : null}
+          </div>
+          {vocab && band ? (
+            <DerivationTrigger
+              ariaLabel={`View derivation for ${vocab.label} verdict`}
+              onClick={() =>
+                verdict &&
+                openDerivation({
+                  title: verdict.verdictTitle,
+                  body: verdict.verdictBody,
+                  evidenceTier: verdict.chipTier,
+                  source: verdict.source,
+                })
+              }
+            >
+              <Badge band={BAND_KEY[band]} size="sm" icon={vocab.icon}>
+                {vocab.label}
+              </Badge>
+            </DerivationTrigger>
+          ) : verdict?.insufficient ? (
+            <EvidenceTierChip tier="Insufficient" />
+          ) : null}
+        </header>
+
+        {verdict?.provisional && verdict.provisionalReason ? (
+          <div className="mt-4">
+            <ProvisionalAlert reason={verdict.provisionalReason} />
+          </div>
+        ) : null}
+
+        <ul role="list" className="mt-4 flex flex-col">
+          {rows.map((row) => (
+            <CompletionRow
+              key={row.key}
+              row={row}
+              provisional={verdict?.provisional ?? false}
+              chipTier={verdict?.chipTier ?? "Insufficient"}
+              source={verdict?.source}
+              onOpenDerivation={openDerivation}
+            />
+          ))}
+        </ul>
+
+        {verdict ? (
+          <footer className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--border-default)] pt-4">
+            <a
+              href={verdict.source.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-sans text-[12px] font-medium text-gold-600 underline decoration-gold-600/40 underline-offset-[3px] hover:text-gold-500"
+            >
+              Source: {verdict.source.sourceLabel}
+            </a>
+            <EvidenceTierChip tier={verdict.chipTier} />
+          </footer>
+        ) : null}
+      </section>
+
+      {derivation ? (
+        <DerivationModal
+          open
+          onClose={() => setDerivation(null)}
+          title={derivation.title}
+          body={derivation.body}
+          evidenceTier={derivation.evidenceTier}
+          sourceUrl={derivation.source.sourceUrl}
+          sourceLabel={derivation.source.sourceLabel}
+          sourceAuthority={derivation.source.sourceAuthority}
+        />
+      ) : null}
+    </>
   );
 }
 
-function CompletionRow({ row }: { row: SubjectRow }) {
-  const tone = deriveTone(row);
-  const segments = Math.max(1, Math.ceil(row.required));
-  const filled = Math.max(0, Math.min(segments, Math.round(row.completed)));
+function CompletionRow({
+  row,
+  provisional,
+  chipTier,
+  source,
+  onOpenDerivation,
+}: {
+  row: SubjectRow;
+  provisional: boolean;
+  chipTier: EvidenceTier;
+  source?: AuthorityCitation;
+  onOpenDerivation: (d: DerivationState) => void;
+}) {
+  const insufficient = row.insufficient;
+  const failed = !insufficient && !row.satisfied;
 
   return (
-    <li>
-      <div className="flex items-center justify-between gap-3">
-        <span style={{ fontSize: 13, color: "var(--text-primary)" }}>{row.label}</span>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            color: TONE_TEXT[tone],
-            fontWeight: 600,
-          }}
-          aria-label={`${row.completed} of ${row.required} completed`}
-        >
-          {row.completed} / {row.required}
-        </span>
-      </div>
-      <div
-        role="progressbar"
-        aria-valuenow={row.completed}
-        aria-valuemin={0}
-        aria-valuemax={row.required}
-        className="mt-2 flex gap-1"
-      >
-        {Array.from({ length: segments }).map((_, i) => (
+    <li className="flex min-h-[36px] items-center justify-between gap-3 border-b border-[color:var(--border-default)] py-2 last:border-b-0">
+      <span className="min-w-0 flex-1 font-sans text-[13px] text-text-primary">{row.label}</span>
+      <div className="flex shrink-0 items-center gap-2">
+        {insufficient ? (
           <span
-            key={i}
-            aria-hidden
-            style={{
-              flex: 1,
-              height: 8,
-              borderRadius: 4,
-              background:
-                i < filled ? TONE_FILL[tone] : "var(--surface-inner)",
-              border: i < filled ? "none" : "1px solid var(--border-default)",
-              transition: "background 200ms ease-out",
-            }}
-          />
-        ))}
+            className="font-mono text-[13px] text-text-tertiary"
+            title="Insufficient evidence"
+          >
+            —
+          </span>
+        ) : (
+          <DerivationTrigger
+            ariaLabel={`View derivation for ${row.label}`}
+            onClick={() =>
+              source &&
+              onOpenDerivation({
+                title: row.derivationTitle,
+                body: row.derivationBody,
+                evidenceTier: chipTier,
+                source,
+              })
+            }
+            className="inline-flex items-center gap-1.5"
+          >
+            <span
+              className={[
+                "font-mono text-[13px] font-medium",
+                failed ? "text-band-urgent" : "text-text-primary",
+              ].join(" ")}
+            >
+              {provisional ? "~" : ""}
+              {row.completed.toFixed(1)} / {row.required.toFixed(1)} yrs
+            </span>
+            {failed ? (
+              <AlertTriangle size={14} className="text-band-urgent" aria-hidden />
+            ) : (
+              <CheckCircle size={14} className="text-band-track" aria-hidden />
+            )}
+          </DerivationTrigger>
+        )}
       </div>
-      {row.hint ? (
-        <p
-          style={{
-            fontSize: 11,
-            color: "var(--text-tertiary)",
-            marginTop: 4,
-          }}
-        >
-          {row.hint}
-        </p>
-      ) : null}
     </li>
   );
 }
