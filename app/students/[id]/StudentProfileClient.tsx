@@ -156,6 +156,8 @@ export default function StudentProfileClient({
                 studentId={student.id}
                 eligibility={eligibility}
                 sessionUserId={sessionUserId}
+                teamRole={teamRole}
+                assignedAdvisorId={student.advisorId}
                 onEligibilityRefresh={refreshEligibility}
               />
             ) : null}

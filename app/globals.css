@@ -134,8 +134,9 @@
   --band-locked-fill:   var(--status-escalated-tint);
   --band-locked-border: var(--status-escalated-border);
 
-  --color-escalation: var(--safety-stroke);
-  --color-escalation-fill: var(--safety-fill);
+  /* Eligibility / intervention urgency (clinical safety uses --safety-stroke directly). */
+  --color-escalation: var(--status-escalated);
+  --color-escalation-fill: var(--status-escalated-tint);
 
   /* === QuasarNova v1 — Roster + Briefings spec (May 2026) ===========
    * Single source of truth for the Roster and Briefings tabs. Do not reuse

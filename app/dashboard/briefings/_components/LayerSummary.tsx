@@ -23,6 +23,7 @@ import {
   engagementTrendLabel,
   trajectoryDirectionLabel,
 } from "@/lib/calculations/display-labels";
+import { escalationLabel } from "@/lib/calculations/escalation-labels";
 
 interface LayerRow {
   layer: string;
@@ -46,8 +47,11 @@ function eligibilityRow(p: BriefingPayload): LayerRow {
     band,
     signal: p.f8.composite_band,
     notes:
-      p.f12?.layer_summary.eligibility.flag ??
-      (p.f8.is_on_track ? "On track" : p.f8.primary_concern ?? "—"),
+      p.f12?.layer_summary.eligibility.flag
+        ? escalationLabel(p.f12.layer_summary.eligibility.flag)
+        : p.f8.is_on_track
+          ? "On track"
+          : escalationLabel(p.f8.primary_concern),
   };
 }
 
@@ -147,7 +151,7 @@ export function LayerSummary({ payload }: LayerSummaryProps) {
   ];
 
   return (
-    <section style={{ padding: "20px 28px" }}>
+    <section className="px-6 py-5">
       <p
         className="text-[11px] font-semibold uppercase"
         style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}

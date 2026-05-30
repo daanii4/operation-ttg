@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
-import { Prisma } from "@prisma/client";
+import { CounselorEscalationAction, Prisma } from "@prisma/client";
 import { z } from "zod";
+import { ensureAdvisorProfile } from "@/lib/auth/advisor-profile";
 import { getTtgSession } from "@/lib/auth/session";
+import { canAcknowledgeEscalation } from "@/lib/briefings/escalation-access";
 import { prismaTtg } from "@/lib/prisma";
 import { ALL_DEMO_STUDENTS } from "@/lib/seed/demo-data";
 
 const AckSchema = z.object({
-  band_transition: z.string().min(3).max(32),
+  band_transition: z.string().min(3).max(64),
   cryptographic_signature: z.string().min(64).max(64),
   acknowledged_at: z.string().datetime(),
   conditions_snapshot: z.record(z.string(), z.unknown()),
+  counselor_action: z.nativeEnum(CounselorEscalationAction),
+  counselor_notes: z.string().min(8).max(2000),
 });
 
 function computeSignature(input: {
@@ -61,9 +65,9 @@ export async function POST(
     );
   }
 
-  const student = await prismaTtg.studentAthlete.findUnique({
+  let student = await prismaTtg.studentAthlete.findUnique({
     where: { id: params.id },
-    select: { id: true },
+    select: { id: true, advisorId: true },
   });
 
   if (!student) {
@@ -93,8 +97,23 @@ export async function POST(
         highSchoolName: demo.student.highSchoolName,
         advisorId: null,
       },
-      select: { id: true },
+      select: { id: true, advisorId: true },
     });
+    student = { id: params.id, advisorId: null };
+  }
+
+  const profile = await ensureAdvisorProfile(session);
+  if (
+    !canAcknowledgeEscalation({
+      sessionUserId: session.userId,
+      teamRole: profile.teamRole,
+      assignedAdvisorId: student.advisorId,
+    })
+  ) {
+    return NextResponse.json(
+      { error: "Assigned advisor must acknowledge this escalation", code: "FORBIDDEN" },
+      { status: 403 }
+    );
   }
 
   await prismaTtg.compositeBandAcknowledgment.create({
@@ -105,6 +124,8 @@ export async function POST(
       acknowledged_at: new Date(parse.data.acknowledged_at),
       cryptographic_signature: parse.data.cryptographic_signature,
       conditions_snapshot: parse.data.conditions_snapshot as unknown as Prisma.InputJsonValue,
+      counselor_action: parse.data.counselor_action,
+      counselor_notes: parse.data.counselor_notes.trim(),
     },
     select: { id: true },
   });

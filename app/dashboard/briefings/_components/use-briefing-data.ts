@@ -10,7 +10,9 @@ import type {
   F11Result,
   InterventionCode,
 } from "@/lib/calculations/types";
-import type { F5CourseRecord, F5Result } from "@/lib/calculations/f5";
+import type { EscalationMeta } from "@/lib/briefings/load-escalation-meta";
+import type { SerializedF5 } from "@/lib/trajectory/serialize-f5";
+import type { PaceCourseInput } from "@/lib/trajectory/build-completion-pace-series";
 
 export interface BriefingObservations {
   grades: Array<{ observed_grade: string; observed_at: string }>;
@@ -33,17 +35,7 @@ export interface BriefingMlScore {
   computed_at: string;
 }
 
-export type SerializedF5Course = Omit<
-  F5CourseRecord,
-  "termEndDate" | "classificationUpdatedAt"
-> & {
-  termEndDate: string;
-  classificationUpdatedAt: string | null;
-};
-
 export interface BriefingPayload {
-  f5?: Omit<F5Result, "lockInDate"> & { lockInDate: string | null };
-  f5Courses?: SerializedF5Course[];
   f8?: F8Result;
   f9?: F9Result;
   f10?: F10Result;
@@ -53,6 +45,14 @@ export interface BriefingPayload {
   ml?: BriefingMlScore | null;
   computedAt?: string;
   observations?: BriefingObservations;
+  meta?: EscalationMeta;
+  f1?: unknown;
+  f3?: unknown;
+  f4?: unknown;
+  f6?: unknown;
+  f7?: unknown;
+  f5?: SerializedF5 | null;
+  f5Courses?: PaceCourseInput[] | null;
 }
 
 export type BriefingStatus = "idle" | "loading" | "ready" | "error" | "empty";
@@ -161,12 +161,20 @@ const PRIORITY: Record<InterventionCode, "red" | "amber" | "green"> = {
   NO_ACTION_REQUIRED: "green",
 };
 
+const PRIORITY_RANK: Record<"red" | "amber" | "green", number> = {
+  red: 0,
+  amber: 1,
+  green: 2,
+};
+
 export function selectInterventionRows(f12: F12Result): InterventionRow[] {
-  return f12.intervention_codes.map((code) => ({
-    code,
-    label: code.replace(/_/g, " "),
-    priority: PRIORITY[code] ?? "amber",
-  }));
+  return f12.intervention_codes
+    .map((code) => ({
+      code,
+      label: INTERVENTION_DESCRIPTIONS[code] ?? code.replace(/_/g, " "),
+      priority: PRIORITY[code] ?? "amber",
+    }))
+    .sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
 }
 
 /**
