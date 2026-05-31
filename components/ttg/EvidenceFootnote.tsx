@@ -1,40 +1,35 @@
 import * as React from "react";
-import { Info } from "lucide-react";
-import Card from "@/components/ui/Card";
-import Link from "@/components/ui/Link";
+import { ExternalLink, ShieldCheck } from "lucide-react";
 
-type EvidenceFootnoteProps = {
-  evidenceTier: "Deterministic" | "Provisional";
+export type EvidenceFootnoteProps = {
   text: string;
   sourceUrl: string;
   sourceLabel: string;
+  /** @deprecated Tier is shown on framework cards; footnote is citation-only. */
+  evidenceTier?: "Deterministic" | "Provisional";
 };
 
-export function EvidenceFootnote({
-  evidenceTier,
-  text,
-  sourceUrl,
-  sourceLabel,
-}: EvidenceFootnoteProps) {
-  const tierColor =
-    evidenceTier === "Deterministic" ? "text-band-green" : "text-band-yellow";
+export function EvidenceFootnote({ text, sourceUrl, sourceLabel }: EvidenceFootnoteProps) {
   return (
-    <Card variant="inner" padding="md" className="rounded">
-      <div className="flex items-start gap-3">
-        <Info className="mt-0.5 h-[14px] w-[14px] shrink-0 text-text-tertiary" />
-        <div className="flex flex-col gap-0">
-          <div className="font-mono text-[11px] text-text-tertiary">
-            Evidence tier: <span className={tierColor}>{evidenceTier}</span>
-          </div>
-          <div className="font-mono text-[11px] leading-[1.6] text-text-tertiary">
-            {text}{" "}
-            <Link href={sourceUrl} external className="text-[11px]">
-              {sourceLabel}
-            </Link>
-          </div>
-        </div>
-      </div>
-    </Card>
+    <div className="flex items-start gap-2 rounded-lg bg-surface-inner p-4 text-text-tertiary">
+      <ShieldCheck
+        size={16}
+        className="mt-0.5 shrink-0 text-olive-600"
+        aria-hidden
+      />
+      <p className="font-sans text-[12px] leading-relaxed text-text-tertiary">
+        {text}{" "}
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 font-medium text-gold-600 underline decoration-gold-600/40 underline-offset-[3px] hover:text-gold-500"
+        >
+          {sourceLabel}
+          <ExternalLink size={12} aria-hidden />
+        </a>
+      </p>
+    </div>
   );
 }
 
