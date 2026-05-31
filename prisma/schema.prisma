@@ -68,11 +68,11 @@ enum AdvisorRole {
 }
 
 enum CounselorEscalationAction {
-  REFERRED_CLINICIAN
-  PARENT_CONTACT
-  CRISIS_PROTOCOL
-  DOCUMENTED_ONLY
-  OTHER
+  ADVISOR_CONTACT_MADE
+  PARENT_GUARDIAN_NOTIFIED
+  DISTRICT_REFERRAL
+  PATHWAY_PIVOT_INITIATED
+  WATCHLIST_ONLY
 
   @@schema("ttg")
 }
@@ -564,6 +564,22 @@ model ThresholdConfig {
   @@unique([key, conference])
   @@index([key, conference])
   @@map("threshold_configs")
+  @@schema("ttg")
+}
+
+
+model ThresholdAuditLog {
+  id             String   @id @default(uuid())
+  threshold_key  String
+  previous_value Float
+  new_value      Float
+  changed_by     String
+  changed_at     DateTime @default(now())
+  reason         String?
+
+  @@index([threshold_key])
+  @@index([changed_at])
+  @@map("threshold_audit_logs")
   @@schema("ttg")
 }
 

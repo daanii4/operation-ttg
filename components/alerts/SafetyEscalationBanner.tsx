@@ -67,7 +67,7 @@ export function SafetyEscalationBanner({
   onAcknowledged,
 }: SafetyEscalationBannerProps) {
   const [formOpen, setFormOpen] = React.useState(false);
-  const [action, setAction] = React.useState<CounselorEscalationAction>("REFERRED_CLINICIAN");
+  const [action, setAction] = React.useState<CounselorEscalationAction>("ADVISOR_CONTACT_MADE");
   const [notes, setNotes] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
