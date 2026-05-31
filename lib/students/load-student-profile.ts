@@ -10,6 +10,7 @@ import {
   THRESHOLD_KEYS,
   getThresholdMap,
 } from "@/lib/config/thresholds";
+import { loadEscalationMeta } from "@/lib/briefings/load-escalation-meta";
 import { prismaTtg } from "@/lib/prisma";
 import { ALL_DEMO_STUDENTS, STUDENT_NAMES } from "@/lib/seed/demo-data";
 import type { ProfileEligibilityPayload, ProfileStudent } from "@/app/students/[id]/profile-types";
@@ -43,6 +44,7 @@ function demoProfileStudent(studentId: string): ProfileStudent | null {
     highSchoolName: demo.student.highSchoolName,
     districtName: "Manteca USD",
     sport: names?.sport ?? "Unknown",
+    advisorId: null,
     courses: demo.courses.map((c) => ({
       id: c.id,
       courseName: c.courseName,
@@ -71,6 +73,7 @@ function serializeStudent(
     highSchoolName: row.highSchoolName,
     districtName: row.highSchool?.district?.districtName ?? null,
     sport,
+    advisorId: row.advisorId,
     courses: row.courses.map((c) => ({
       id: c.id,
       courseName: c.courseName,
@@ -136,6 +139,7 @@ export async function loadStudentProfile(
     const briefing = await buildStudentBriefing(studentId, thresholds);
     if (briefing.found) {
       const { record } = briefing;
+      const meta = await loadEscalationMeta(studentId);
       eligibility = {
         ...record.bundle,
         f8: record.f8,
@@ -146,6 +150,7 @@ export async function loadStudentProfile(
         ml: record.ml,
         computedAt: record.computedAt,
         observations: record.observations,
+        meta,
       };
     }
   } catch (err) {

@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { ensureAdvisorProfile } from "@/lib/auth/advisor-profile";
+import { getTtgSession } from "@/lib/auth/session";
 import { buildCohortResponse } from "@/lib/cohort/build-cohort-response";
 import { sortQnRosterRows, toQnRosterRows } from "@/lib/cohort/qn-roster";
 import DashboardShell from "@/components/layout/DashboardShell";
@@ -10,9 +13,13 @@ export const metadata: Metadata = {
 };
 
 export default async function BriefingsPage() {
+  const session = await getTtgSession();
+  if (!session || session.userId === "anonymous") {
+    redirect("/login?redirectTo=/dashboard/briefings");
+  }
+  const profile = await ensureAdvisorProfile(session);
+
   const data = await buildCohortResponse();
-  // List ordering per spec §4.2: ESCALATED → RED → YELLOW → GREEN,
-  // then weeks_to_critical_action ascending.
   const rows = sortQnRosterRows(toQnRosterRows(data.students));
 
   return (
@@ -28,7 +35,11 @@ export default async function BriefingsPage() {
           { label: "Briefings" },
         ]}
       />
-      <BriefingsPageClient rows={rows} />
+      <BriefingsPageClient
+        rows={rows}
+        sessionUserId={session.userId}
+        teamRole={profile.teamRole}
+      />
     </DashboardShell>
   );
 }

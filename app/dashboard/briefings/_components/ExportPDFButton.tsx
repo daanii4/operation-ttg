@@ -24,6 +24,7 @@ export interface ExportPDFButtonProps {
   studentName: string;
   variant?: ButtonVariant;
   fullWidth?: boolean;
+  className?: string;
   /** Used for the on-disk filename hint. */
   filenameHint?: string;
 }

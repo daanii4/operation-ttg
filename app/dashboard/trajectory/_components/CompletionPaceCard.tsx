@@ -13,7 +13,7 @@ import {
 } from "@/lib/trajectory/build-completion-pace-series";
 import type { F5Result } from "@/lib/calculations/f5";
 import { deserializeF5, type SerializedF5 } from "@/lib/trajectory/serialize-f5";
-import type { SerializedF5Course } from "@/app/dashboard/briefings/_components/use-briefing-data";
+import type { PaceCourseInput as SerializedF5Course } from "@/lib/trajectory/build-completion-pace-series";
 
 const Chart = dynamic(() => import("./CompletionPaceChart"), {
   ssr: false,

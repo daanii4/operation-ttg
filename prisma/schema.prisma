@@ -67,6 +67,16 @@ enum AdvisorRole {
   @@schema("ttg")
 }
 
+enum CounselorEscalationAction {
+  REFERRED_CLINICIAN
+  PARENT_CONTACT
+  CRISIS_PROTOCOL
+  DOCUMENTED_ONLY
+  OTHER
+
+  @@schema("ttg")
+}
+
 enum NcaaChecklistItemKey {
   account_created
   ncaa_id_obtained
@@ -243,13 +253,15 @@ model StudentAthlete {
 }
 
 model CompositeBandAcknowledgment {
-  id                      String   @id @default(uuid())
+  id                      String                     @id @default(uuid())
   student_id              String
   advisor_id              String
   band_transition         String
-  acknowledged_at         DateTime @default(now())
+  acknowledged_at         DateTime                   @default(now())
   cryptographic_signature String
   conditions_snapshot     Json
+  counselor_action        CounselorEscalationAction?
+  counselor_notes         String?
 
   student StudentAthlete @relation(fields: [student_id], references: [id])
 

@@ -1,41 +1,38 @@
 /**
  * QuasarNova v1 — §1.3 EvidenceTierChip
  *
- * Vocabulary labels for defensibility surfaces — equal visual weight per tier.
+ * Text-only chip aligned to the bottom-right of any data card. No background.
+ * Insufficient is rendered in italic + AlertTriangle icon so the cautionary
+ * tier reads differently from Deterministic / Provisional even at small sizes.
  */
 
 import * as React from "react";
-import {
-  AlertCircle,
-  MinusCircle,
-  ShieldCheck,
-  type LucideIcon,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleDashed } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 export type EvidenceTier = "Deterministic" | "Provisional" | "Insufficient";
 
 const TIERS: Record<
   EvidenceTier,
-  {
-    label: string;
-    icon: LucideIcon;
-    className: string;
-  }
+  { color: string; icon: LucideIcon; italic: boolean; label: string }
 > = {
   Deterministic: {
-    label: "Verified",
-    icon: ShieldCheck,
-    className: "border-olive-200 bg-olive-100 text-olive-700",
+    color: "var(--color-green)",
+    icon: CheckCircle2,
+    italic: false,
+    label: "Deterministic",
   },
   Provisional: {
-    label: "Provisional — assumptions applied",
-    icon: AlertCircle,
-    className: "border-gold-200 bg-gold-100 text-gold-700",
+    color: "var(--color-yellow)",
+    icon: CircleDashed,
+    italic: false,
+    label: "Provisional",
   },
   Insufficient: {
-    label: "Insufficient evidence",
-    icon: MinusCircle,
-    className: "border-[color:var(--border-default)] bg-surface-inner text-text-tertiary",
+    color: "var(--color-red)",
+    icon: AlertTriangle,
+    italic: true,
+    label: "Insufficient",
   },
 };
 
@@ -44,27 +41,35 @@ export interface EvidenceTierChipProps {
   className?: string;
   /** Optional descriptor displayed after the tier (e.g. "across all layers"). */
   detail?: string;
+  /** Override the default tier label (e.g. Deterministic → Verified). */
+  labelOverride?: string;
 }
 
-export function EvidenceTierChip({ tier, className, detail }: EvidenceTierChipProps) {
+export function EvidenceTierChip({
+  tier,
+  className,
+  detail,
+  labelOverride,
+}: EvidenceTierChipProps) {
   const t = TIERS[tier];
   const Icon = t.icon;
   return (
     <span
       className={[
-        "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-0.5",
-        "font-sans text-[11px] font-medium leading-4",
-        t.className,
+        "inline-flex items-center gap-1 text-[11px] font-medium leading-4",
+        t.italic ? "italic" : "",
         className,
       ]
         .filter(Boolean)
         .join(" ")}
-      role="status"
+      style={{ color: t.color }}
     >
-      <Icon size={12} aria-hidden className="shrink-0" />
-      <span className="truncate">{t.label}</span>
+      <Icon size={12} aria-hidden style={{ color: t.color }} />
+      <span>{labelOverride ?? t.label}</span>
       {detail ? (
-        <span className="hidden font-normal sm:inline">· {detail}</span>
+        <span className="text-[11px] font-normal" style={{ color: "var(--color-muted)" }}>
+          · {detail}
+        </span>
       ) : null}
     </span>
   );

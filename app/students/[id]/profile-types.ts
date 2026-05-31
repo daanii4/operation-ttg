@@ -26,6 +26,7 @@ export type ProfileStudent = {
   highSchoolName: string;
   districtName: string | null;
   sport: string;
+  advisorId: string | null;
   courses: ProfileCourse[];
 };
 
