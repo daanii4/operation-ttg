@@ -10,6 +10,7 @@ import type {
   F11Result,
   InterventionCode,
 } from "@/lib/calculations/types";
+import type { F5CourseRecord, F5Result } from "@/lib/calculations/f5";
 
 export interface BriefingObservations {
   grades: Array<{ observed_grade: string; observed_at: string }>;
@@ -32,7 +33,17 @@ export interface BriefingMlScore {
   computed_at: string;
 }
 
+export type SerializedF5Course = Omit<
+  F5CourseRecord,
+  "termEndDate" | "classificationUpdatedAt"
+> & {
+  termEndDate: string;
+  classificationUpdatedAt: string | null;
+};
+
 export interface BriefingPayload {
+  f5?: Omit<F5Result, "lockInDate"> & { lockInDate: string | null };
+  f5Courses?: SerializedF5Course[];
   f8?: F8Result;
   f9?: F9Result;
   f10?: F10Result;

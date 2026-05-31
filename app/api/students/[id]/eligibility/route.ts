@@ -54,6 +54,15 @@ export async function GET(
     const { record } = result;
     return NextResponse.json({
       ...record.bundle,
+      f5: {
+        ...record.f5,
+        lockInDate: record.f5.lockInDate?.toISOString() ?? null,
+      },
+      f5Courses: record.f5Courses.map((c) => ({
+        ...c,
+        termEndDate: c.termEndDate.toISOString(),
+        classificationUpdatedAt: c.classificationUpdatedAt?.toISOString() ?? null,
+      })),
       f8: record.f8,
       f9: record.f9,
       f10: record.f10,

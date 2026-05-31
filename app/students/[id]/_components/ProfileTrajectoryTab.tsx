@@ -1,11 +1,9 @@
 "use client";
 
 import GpaTrajectoryCard from "@/app/dashboard/trajectory/_components/GpaTrajectoryCard";
-import AimsSignalCard from "@/app/dashboard/trajectory/_components/AimsSignalCard";
-import EngagementCard from "@/app/dashboard/trajectory/_components/EngagementCard";
-import RiskForecastCard from "@/app/dashboard/trajectory/_components/RiskForecastCard";
 import type { ProfileEligibilityPayload } from "../profile-types";
 
+/** Profile trajectory mirrors dashboard: academic GPA trend only. */
 export function ProfileTrajectoryTab({
   eligibility,
 }: {
@@ -20,15 +18,11 @@ export function ProfileTrajectoryTab({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] [&>section:last-child]:border-b-0">
+    <div className="overflow-hidden rounded-lg border border-[color:var(--border-default)] bg-surface-card">
       <GpaTrajectoryCard
-        variant="embedded"
         f9={eligibility.f9}
         observations={eligibility.observations?.grades ?? null}
       />
-      <AimsSignalCard variant="embedded" f10={eligibility.f10} />
-      <EngagementCard variant="embedded" f11={eligibility.f11} />
-      <RiskForecastCard variant="embedded" ml={eligibility.ml} />
     </div>
   );
 }
